@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Details</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0 auto;
+            padding: 20px;
+            max-width: 800px;
+            line-height: 1.6;
+        }
+        
+        .post-header {
+            position: relative;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .post-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+        
+        .suppressed {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .suppress-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 0.9em;
+        }
+        
+        .comment {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .comment-meta {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        #comment-form {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        #comment-content {
+            width: 100%;
+            min-height: 100px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        #submit-comment {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .loading {
+            color: #6c757d;
+        }
+        
+        .back-to-feed {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        
+        .reason-select {
+            margin: 10px 0;
+            padding: 8px;
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body data-post-id="{{ post_id }}" 
+      data-is-admin="{{ user.is_staff|yesno:'true,false' }}"
+      data-csrf-token="{{ csrf_token }}"
+      data-username="{{ user.username }}"
+      data-is-public="{{ is_public|default:'false' }}">
+
+    <a href="{% if is_public %}/app/public_feed{% else %}/app/feed_page{% endif %}" class="back-to-feed">← Back to Feed</a>
+
+    <div class="post-header">
+        <h1 id="title" class="loading">Loading Post...</h1>
+        <p id="meta"></p>
+        <div id="post-actions" class="post-actions"></div>
+    </div>
+    
+    <div id="content"></div>
+    
+    <h2>Comments</h2>
+    <div id="comments"></div>
+    
+    {% if user.is_authenticated %}
+    <div id="comment-form">
+        <h3>Add a Comment</h3>
+        <textarea id="comment-content" placeholder="Write your comment here..."></textarea>
+        <button id="submit-comment">Submit Comment</button>
+    </div>
+    {% else %}
+    <p>Please <a href="/accounts/login/">log in</a> to comment.</p>
+    {% endif %}
+
+    <div id="suppress-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+        <div style="background:white; margin:100px auto; padding:20px; width:400px; border-radius:5px;">
+            <h3 id="modal-title">Suppress Content</h3>
+            <select id="reason-select" class="reason-select">
+                <option value="">Select a reason</option>
+            </select>
+            <div style="margin-top:20px; text-align:right;">
+                <button id="cancel-suppress" style="margin-right:10px;">Cancel</button>
+                <button id="confirm-suppress">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const postId = document.body.dataset.postId;
+        const isAdmin = document.body.dataset.isAdmin === 'true';
+        const csrfToken = document.body.dataset.csrfToken;
+        const currentUsername = document.body.dataset.username;
+        const isPublic = document.body.dataset.isPublic === 'true';
+
+        const suppressModal = document.getElementById('suppress-modal');
+        const reasonSelect = document.getElementById('reason-select');
+        const cancelBtn = document.getElementById('cancel-suppress');
+        const confirmBtn = document.getElementById('confirm-suppress');
+        const modalTitle = document.getElementById('modal-title');
+
+        // Current suppression context
+        let currentSuppression = {
+            type: null,
+            id: null,
+            isHidden: null
+        };
+
+        async function fetchData(url, options = {}) {
+            const response = await fetch(url, {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            });
+            
+            if (!response.ok) {
+                const error = await response.json().catch(() => null);
+                throw new Error(error?.error || 'Request failed');
+            }
+            
+            return response.json();
+        }
+
+        async function getSuppressionReasons() {
+            try {
+                const data = await fetchData('/app/get_suppression_reasons');
+                return data.reasons || [];
+            } catch {
+                return [];
+            }
+        }
+
+        async function showSuppressionModal(type, id, isHidden) {
+            currentSuppression = { type, id, isHidden };
+            modalTitle.textContent = isHidden ? `Unsuppress ${type}` : `Suppress ${type}`;
+            
+            const reasons = await getSuppressionReasons();
+            if (reasons.length === 0) {
+                alert('No suppression reasons available');
+                return;
+            }
+            
+            reasonSelect.innerHTML = '<option value="">Select a reason</option>';
+            reasons.forEach(reason => {
+                const option = document.createElement('option');
+                option.value = reason;
+                option.textContent = reason;
+                reasonSelect.appendChild(option);
+            });
+            
+            suppressModal.style.display = 'block';
+        }
+
+        async function handleSuppression() {
+            const reason = reasonSelect.value;
+            if (!reason) {
+                alert('Please select a reason');
+                return;
+            }
+            
+            try {
+                const { type, id } = currentSuppression;
+                const endpoint = `/app/hide${type === 'post' ? 'Post' : 'Comment'}`;
+                await fetchData(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        [`${type}_id`]: id,
+                        reason: reason
+                    })
+                });
+                
+                suppressModal.style.display = 'none';
+                window.location.reload();
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        cancelBtn.addEventListener('click', () => {
+            suppressModal.style.display = 'none';
+        });
+
+        confirmBtn.addEventListener('click', handleSuppression);
+
+        suppressModal.addEventListener('click', (e) => {
+            if (e.target === suppressModal) {
+                suppressModal.style.display = 'none';
+            }
+        });
+
+        async function loadPost() {
+            try {
+                const endpoint = isPublic ? `/app/public_post/${postId}` : `/app/post/${postId}`;
+                const post = await fetchData(endpoint);
+                
+                document.getElementById('title').className = '';
+                document.getElementById('title').textContent = post.title;
+                document.getElementById('meta').textContent = `By ${post.username} on ${post.date}`;
+                document.getElementById('content').textContent = post.content;
+
+                if (isAdmin && post.username !== currentUsername) {
+                    const btn = document.createElement('button');
+                    btn.className = 'suppress-btn';
+                    btn.textContent = post.is_hidden ? 'Unsuppress Post' : 'Suppress Post';
+                    btn.onclick = () => showSuppressionModal('post', post.id, post.is_hidden);
+                    document.getElementById('post-actions').append(btn);
+                }
+
+                document.getElementById('comments').innerHTML = post.comments
+                    .map(comment => `
+                        <div class="comment">
+                            <p class="${comment.is_hidden ? 'suppressed' : ''}">
+                                ${comment.is_hidden && !(isAdmin || comment.username === currentUsername) 
+                                    ? "This comment has been removed" 
+                                    : comment.content}
+                            </p>
+                            <div class="comment-meta">
+                                <small>— ${comment.username} @ ${comment.date}</small>
+                                ${isAdmin && comment.username !== currentUsername 
+                                    ? `<button class="suppress-btn" 
+                                        onclick="showSuppressionModal('comment', ${comment.id}, ${comment.is_hidden})">
+                                        ${comment.is_hidden ? 'Unsuppress' : 'Suppress'}
+                                      </button>`
+                                    : ''}
+                            </div>
+                        </div>
+                    `)
+                    .join('');
+                    
+            } catch (error) {
+                document.getElementById('title').className = 'error';
+                document.getElementById('title').textContent = 'Error loading post';
+                document.getElementById('content').textContent = error.message;
+            }
+        }
+
+        document.getElementById('submit-comment')?.addEventListener('click', async () => {
+            const content = document.getElementById('comment-content').value.trim();
+            if (!content) return alert('Please enter a comment');
+            
+            try {
+                await fetchData('/app/createComment', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `post_id=${postId}&content=${encodeURIComponent(content)}`
+                });
+                
+                window.location.reload();
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadPost);
+    </script>
+</body>
+</html>

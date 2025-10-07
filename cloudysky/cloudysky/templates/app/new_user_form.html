@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 40px;
+        }
+        .form-container {
+            margin-bottom: 20px;
+        }
+        .form-container label {
+            margin-right: 10px;
+        }
+        .form-container input {
+            padding: 8px;
+            margin-bottom: 10px;
+            width: 200px;
+        }
+        .form-container button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 5px;
+            border: none;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background-color: #218838;
+        }
+        .message {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        .home-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 5px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .home-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    {% if user %}
+        <div class="success">
+            <p>Account created successfully!</p>
+            <a href="/">
+                <button>Return to Homepage</button>
+            </a>
+        </div>
+    {% else %}
+        <h1>Create New User</h1>
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+        <form method="POST" action="">
+            {% csrf_token %}
+            <div class="form-container">
+                <label>Username:</label>
+                <input type="text" name="user_name" required>
+            </div>
+            <div class="form-container">
+                <label>Email:</label>
+                <input type="email" name="email" required>
+            </div>
+            <div class="form-container">
+                <label>Password:</label>
+                <input type="password" name="password" required>
+            </div>
+            <div class="form-container">
+                <label>Admin User:</label>
+                <input type="checkbox" name="is_admin" value="true">
+            </div>
+            <button type="submit">Sign Up</button>
+        </form>
+    {% endif %}
+</body>
+</html>

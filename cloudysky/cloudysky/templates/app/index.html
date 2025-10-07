@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Home</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: sans-serif;
+      margin: 40px;
+    }
+    .highlight {
+      font-weight: bold;
+      background-color: yellow;
+      padding: 0 4px;
+      border-radius: 3px;
+    }
+    #bios ul {
+      list-style: none;
+      padding: 0;
+    }
+    #bios li {
+      margin: 8px 0;
+    }
+    #time p {
+      font-size: 1.2em;
+      margin: 10px 0;
+    }
+    .auth-buttons {
+      margin: 20px 0;
+    }
+    .nav-buttons {
+      margin: 20px 0;
+    }
+    .logout-button {
+      margin: 20px 0;
+    }
+    .guest-buttons {
+      margin: 20px 0;
+    }
+    .auth-buttons a, .nav-buttons a, .guest-buttons a {
+      text-decoration: none;
+      margin: 0 10px;
+    }
+    .auth-buttons button, .nav-buttons button, .logout-button button, .guest-buttons button {
+      padding: 10px 20px;
+      font-size: 1em;
+      border-radius: 5px;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    .auth-buttons button {
+      background-color: #007bff;
+    }
+    .auth-buttons button:hover {
+      background-color: #0056b3;
+    }
+    .nav-buttons button {
+      background-color: #28a745;
+    }
+    .nav-buttons button:hover {
+      background-color: #218838;
+    }
+    .guest-buttons button {
+      background-color: #17a2b8;
+    }
+    .guest-buttons button:hover {
+      background-color: #138496;
+    }
+    .logout-button button {
+      background-color: #dc3545;
+    }
+    .logout-button button:hover {
+      background-color: #c82333;
+    }
+    #admin-status {
+      margin: 20px 0;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #f8f9fa;
+    }
+    .admin-true {
+      color: #28a745;
+      font-weight: bold;
+    }
+    .admin-false {
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  {% if not user.is_authenticated %}
+    <p>Not logged in</p>
+  {% endif %}
+
+  {% if user.is_authenticated %}
+    <h2>Welcome, <span class="highlight">{{ user.username }}</span>!</h2>
+    
+    <div id="admin-status">
+      Admin Status: 
+      <span class="{% if user.is_staff %}admin-true{% else %}admin-false{% endif %}">
+        {% if user.is_staff %}Yes{% else %}No{% endif %}
+      </span>
+    </div>
+    
+    <div class="nav-buttons">
+      <a href="/app/feed_page">
+        <button>View Feed</button>
+      </a>
+      <a href="/app/new_post">
+        <button>Create New Post</button>
+      </a>
+    </div>
+    
+    <div class="logout-button">
+      <button id="logout-btn">Log Out</button>
+    </div>
+  {% else %}
+    <h2>Welcome, guest!</h2>
+    <div class="auth-buttons">
+      <a href="/accounts/login/">
+        <button>Login</button>
+      </a>
+      <a href="{% url 'new_user_form' %}">
+        <button>Create Account</button>
+      </a>
+    </div>
+  {% endif %}
+  
+  <section id="bios">
+    <h3>Team Biographies:</h3>
+    <ul>
+      {% for bio in bios %}
+        <li>{{ bio }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section id="time">
+    <h3>Current Time</h3>
+    <p>{{ current_time }}</p> 
+  </section>
+
+  <script>
+    document.getElementById('logout-btn')?.addEventListener('click', async function() {
+      try {
+        const response = await fetch('/accounts/logout/', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+          },
+          credentials: 'same-origin'
+        });
+        
+        if (response.ok) {
+          window.location.href = '/';  
+        } else {
+          console.error('Logout failed');
+        }
+      } catch (error) {
+        console.error('Error during logout:', error);
+      }
+    });
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  </script>
+</body>
+</html>
