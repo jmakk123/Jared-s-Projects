@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Global Commodities Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <style>
+      :root {
+        --bg: #0d0f14;
+        --bg-elevated: rgba(20, 24, 33, 0.9);
+        --panel: rgba(17, 21, 30, 0.82);
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --text: #eef2ff;
+        --muted: #8b96b7;
+        --grid: rgba(90, 101, 129, 0.16);
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "IBM Plex Sans", sans-serif;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      body::before {
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+        background-size: 38px 38px;
+        mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        animation: drift 22s linear infinite;
+      }
+
+      body::after {
+        opacity: 0.14;
+        background-image:
+          radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08), transparent 30%),
+          radial-gradient(circle at 80% 0%, rgba(40, 215, 255, 0.12), transparent 35%),
+          radial-gradient(circle at 50% 100%, rgba(245, 166, 35, 0.12), transparent 40%);
+      }
+
+      @keyframes drift {
+        from {
+          transform: translate3d(0, 0, 0);
+        }
+        to {
+          transform: translate3d(0, 38px, 0);
+        }
+      }
+
+      .app-shell {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+      }
+
+      .sidebar {
+        padding: 28px 20px;
+        border-right: 1px solid var(--panel-border);
+        background: linear-gradient(180deg, rgba(10, 12, 18, 0.95), rgba(10, 12, 18, 0.8));
+        backdrop-filter: blur(18px);
+      }
+
+      .brand {
+        margin-bottom: 24px;
+      }
+
+      .eyebrow,
+      .meta-label {
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 11px;
+      }
+
+      .title {
+        margin: 10px 0 8px;
+        font-size: 28px;
+        line-height: 1.05;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: #b5c0df;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .source-box,
+      .control-card,
+      .stats-card,
+      .chart-card {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .source-box {
+        margin: 16px 0 0;
+        padding: 12px 14px;
+        overflow: hidden;
+      }
+
+      .source-box strong,
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      .source-path {
+        display: block;
+        margin-top: 6px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .controls-stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .control-card {
+        padding: 16px;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 12px;
+      }
+
+      .toggle {
+        appearance: none;
+        width: 68px;
+        height: 34px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.12));
+        border-radius: 999px;
+        position: relative;
+        cursor: pointer;
+        transition: 180ms ease;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      }
+
+      .toggle::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(180deg, #f5f7ff, #dfe6ff);
+        transition: 180ms ease;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      }
+
+      .toggle:checked::after {
+        transform: translateX(34px);
+      }
+
+      .toggle:checked {
+        background: linear-gradient(90deg, rgba(40, 215, 255, 0.22), rgba(87, 227, 137, 0.28));
+      }
+
+      .toggle-copy {
+        display: grid;
+        gap: 4px;
+      }
+
+      .toggle-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+        font-size: 12px;
+        color: #a8b4d6;
+      }
+
+      .toggle-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4e566c;
+        transition: 180ms ease;
+      }
+
+      .toggle-status.active .toggle-status-dot {
+        background: #28d7ff;
+        box-shadow: 0 0 12px rgba(40, 215, 255, 0.65);
+      }
+
+      .commodity-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .commodity-item {
+        display: grid;
+        grid-template-columns: 18px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 13px;
+        border-radius: 16px;
+        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        transition: 180ms ease;
+      }
+
+      .commodity-item:hover,
+      .commodity-item.active {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .commodity-swatch {
+        width: 10px;
+        height: 40px;
+        border-radius: 999px;
+      }
+
+      .commodity-name {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .commodity-unit {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .commodity-check {
+        width: 18px;
+        height: 18px;
+      }
+
+      .content {
+        padding: 26px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .hero-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+        gap: 16px;
+        align-items: stretch;
+        padding: 16px;
+        background: linear-gradient(135deg, rgba(18, 24, 35, 0.96), rgba(7, 10, 16, 0.92));
+        border: 1px solid var(--panel-border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero-copy {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        padding: 8px 8px 8px 10px;
+      }
+
+      .hero-title {
+        margin: 6px 0 0;
+        font-size: 36px;
+        max-width: 12ch;
+        line-height: 1.02;
+      }
+
+      .hero-subtitle {
+        color: #a6b2d2;
+        max-width: 54ch;
+      }
+
+      .hero-topline {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 12px;
+        color: #d7e2ff;
+      }
+
+      .hero-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 12px currentColor;
+      }
+
+      .hero-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .hero-metric {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+      }
+
+      .hero-metric .meta-label {
+        font-size: 10px;
+      }
+
+      .hero-metric-value {
+        margin-top: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 26px;
+      }
+
+      .hero-controls {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+        padding: 8px;
+      }
+
+      .range-card {
+        padding: 14px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+      }
+
+      .hero-forecast-note {
+        padding: 14px 16px;
+        border-radius: 20px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid rgba(255, 255, 255, 0.07);
+      }
+
+      .hero-forecast-note strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 20px;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      .range-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .range-button {
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        cursor: pointer;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+      }
+
+      .range-button.active {
+        border-color: rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .stats-card {
+        padding: 18px;
+      }
+
+      .stats-value {
+        margin-top: 10px;
+        font-size: 24px;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      .stats-value.positive {
+        color: #69f0ae;
+      }
+
+      .stats-value.negative {
+        color: #ff7c9e;
+      }
+
+      .charts-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 0.85fr;
+        gap: 18px;
+      }
+
+      .secondary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 18px;
+      }
+
+      .chart-card {
+        padding: 12px;
+        min-height: 260px;
+      }
+
+      .chart-card.main {
+        min-height: 540px;
+      }
+
+      .chart-card.forecast {
+        min-height: 360px;
+      }
+
+      .chart-title {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 10px 12px 2px;
+      }
+
+      .chart-title h3 {
+        margin: 0;
+        font-size: 15px;
+      }
+
+      .chart-title span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .plot {
+        width: 100%;
+        height: 100%;
+        min-height: 220px;
+      }
+
+      .chart-card.main .plot {
+        min-height: 450px;
+      }
+
+      .chart-card.forecast .plot {
+        min-height: 290px;
+      }
+
+      .loading {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(7, 8, 13, 0.84);
+        backdrop-filter: blur(14px);
+        z-index: 5;
+        transition: opacity 180ms ease;
+      }
+
+      .loading.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .loading-panel {
+        width: 280px;
+        padding: 28px;
+        text-align: center;
+        border-radius: 24px;
+        background: rgba(18, 22, 31, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: var(--shadow);
+      }
+
+      .spinner {
+        width: 42px;
+        height: 42px;
+        margin: 0 auto 16px;
+        border: 3px solid rgba(255, 255, 255, 0.08);
+        border-top-color: #28d7ff;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @media (max-width: 1320px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 1180px) {
+        .app-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--panel-border);
+        }
+
+        .charts-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .secondary-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-card {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-metrics {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loading" id="loading">
+      <div class="loading-panel">
+        <div class="spinner"></div>
+        <div class="eyebrow">Initializing Market Data</div>
+        <h2>Preloading commodities models</h2>
+        <p class="subtitle">Fetching the full in-memory dataset so charts are interactive immediately.</p>
+      </div>
+    </div>
+
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="eyebrow">Global Commodities Terminal</div>
+          <h1 class="title">Petroleum Markets</h1>
+          <p class="subtitle">Forecast-first view of key EIA spot benchmarks.</p>
+        </div>
+
+        <div class="source-box">
+          <div class="meta-label">Data</div>
+          <div class="subtitle" id="lastUpdated">Loading dataset...</div>
+          <div class="subtitle" id="nextRelease" style="margin-top: 6px;"></div>
+        </div>
+
+        <div class="controls-stack">
+          <section class="control-card">
+            <div class="meta-label">Display Mode</div>
+            <div class="toggle-row">
+              <div class="toggle-copy">
+                <div style="font-weight: 600">Compare normalized returns</div>
+                <div class="subtitle">Overlay up to 4 commodities from the selected range.</div>
+                <div class="toggle-status" id="compareStatus">
+                  <span class="toggle-status-dot"></span>
+                  <span id="compareStatusText">Compare off</span>
+                </div>
+              </div>
+              <input id="compareToggle" class="toggle" type="checkbox" />
+            </div>
+          </section>
+
+          <section class="control-card">
+            <div class="meta-label">Commodities</div>
+            <div id="commodityList" class="commodity-list"></div>
+          </section>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="hero-card">
+          <div class="hero-copy">
+            <div class="hero-topline">
+              <span class="hero-pill"><span class="hero-dot" id="heroAccentDot" style="color:#28d7ff"></span><span id="heroEyebrow">Single Commodity View</span></span>
+              <span class="hero-pill" id="heroModelPill">Best model loading</span>
+            </div>
+            <div>
+              <h2 class="hero-title" id="heroTitle">Loading...</h2>
+              <div class="hero-subtitle" id="heroSubtitle"></div>
+            </div>
+            <div class="hero-metrics">
+              <div class="hero-metric">
+                <div class="meta-label">Spot</div>
+                <div class="hero-metric-value" id="heroSpot">N/A</div>
+              </div>
+              <div class="hero-metric">
+                <div class="meta-label">1W Forecast</div>
+                <div class="hero-metric-value" id="heroForecast">N/A</div>
+              </div>
+              <div class="hero-metric">
+                <div class="meta-label">Forecast Move</div>
+                <div class="hero-metric-value" id="heroMove">N/A</div>
+              </div>
+            </div>
+          </div>
+          <div class="hero-controls">
+            <div class="range-card">
+              <div class="meta-label" style="margin-bottom:10px;">Range</div>
+              <div class="range-buttons" id="rangeButtons"></div>
+            </div>
+            <div class="hero-forecast-note">
+              <div class="meta-label" id="heroCategory">Market Note</div>
+              <strong id="heroForecastCall">Waiting for model output</strong>
+              <div class="subtitle" id="heroForecastSupport" style="margin-top:6px;">Short-horizon projection with contract context.</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="statsGrid" class="stats-grid"></section>
+
+        <section class="secondary-grid">
+          <div class="chart-card">
+            <div class="chart-title">
+              <h3>Forecast Summary</h3>
+              <span id="forecastSummaryMeta">Decision support</span>
+            </div>
+            <div id="forecastSummary" style="padding: 10px 14px 14px"></div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">
+              <h3>Top Commodity Headlines</h3>
+              <span id="newsMeta">Most relevant recent articles for this market</span>
+            </div>
+            <div id="newsPanel" style="padding: 4px 14px 14px;"></div>
+          </div>
+        </section>
+
+        <section class="charts-grid">
+          <div class="chart-card main forecast">
+            <div class="chart-title">
+              <h3 id="mainChartTitle">Forecast Path</h3>
+              <span id="mainChartMeta"></span>
+            </div>
+            <div id="mainChart" class="plot"></div>
+          </div>
+
+          <div class="stack">
+            <div class="chart-card">
+              <div class="chart-title">
+                <h3>Volatility Regime</h3>
+                <span id="forecastMeta">30-day realized volatility</span>
+              </div>
+              <div id="volChart" class="plot"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="chart-card">
+          <div class="chart-title">
+            <h3>Price History</h3>
+            <span>Historical context for the selected range</span>
+          </div>
+          <div id="historyChart" class="plot"></div>
+        </section>
+
+      </main>
+    </div>
+
+    <script>
+      const state = {
+        bootstrap: null,
+        commodities: [],
+        commodityMap: new Map(),
+        selectedCommodityId: null,
+        compareMode: false,
+        compareIds: [],
+        range: "1Y",
+        forecastCache: new Map(),
+        forecastLoading: false,
+        newsCache: new Map(),
+        newsLoading: false,
+      };
+
+      const RANGE_CONFIG = {
+        "1M": 30,
+        "3M": 90,
+        "6M": 180,
+        "1Y": 365,
+        "2Y": 365 * 2,
+        "5Y": 365 * 5,
+        "10Y": 365 * 10,
+        All: null,
+      };
+
+      const loadingEl = document.getElementById("loading");
+      const commodityListEl = document.getElementById("commodityList");
+      const rangeButtonsEl = document.getElementById("rangeButtons");
+      const compareToggleEl = document.getElementById("compareToggle");
+      const compareStatusEl = document.getElementById("compareStatus");
+      const compareStatusTextEl = document.getElementById("compareStatusText");
+
+      const plotTheme = {
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { family: "IBM Plex Sans, sans-serif", color: "#dfe7ff" },
+        xaxis: {
+          gridcolor: "rgba(90, 101, 129, 0.16)",
+          zeroline: false,
+          color: "#9dadcf",
+        },
+        yaxis: {
+          gridcolor: "rgba(90, 101, 129, 0.16)",
+          zeroline: false,
+          color: "#9dadcf",
+        },
+        margin: { l: 54, r: 18, t: 14, b: 42 },
+        showlegend: true,
+        legend: { orientation: "h", y: 1.12, x: 0 },
+      };
+
+      function fmtNumber(value, digits = 2) {
+        if (value === null || value === undefined || Number.isNaN(value)) return "N/A";
+        return new Intl.NumberFormat("en-US", {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        }).format(value);
+      }
+
+      function fmtPercent(value) {
+        if (value === null || value === undefined || Number.isNaN(value)) return "N/A";
+        const sign = value > 0 ? "+" : "";
+        return `${sign}${fmtNumber(value, 2)}%`;
+      }
+
+      function parseDate(value) {
+        return new Date(`${value}T00:00:00`);
+      }
+
+      function getRangeStart(points) {
+        const days = RANGE_CONFIG[state.range];
+        if (!days || !points.length) return null;
+        const end = parseDate(points[points.length - 1].date);
+        const cutoff = new Date(end);
+        cutoff.setDate(cutoff.getDate() - days);
+        return cutoff;
+      }
+
+      function filterPoints(points) {
+        const cutoff = getRangeStart(points);
+        if (!cutoff) return points;
+        return points.filter((point) => parseDate(point.date) >= cutoff);
+      }
+
+      function activeCommodity() {
+        return state.commodityMap.get(state.selectedCommodityId);
+      }
+
+      function activeForecast() {
+        const forecasts = state.forecastCache.get(state.selectedCommodityId) || {};
+        return forecasts[state.range] || forecasts["1Y"] || activeCommodity()?.forecast || {};
+      }
+
+      async function ensureForecast(commodityId, rangeKey) {
+        let forecasts = state.forecastCache.get(commodityId);
+        if (!forecasts) {
+          forecasts = {};
+          state.forecastCache.set(commodityId, forecasts);
+        }
+        const cached = forecasts[rangeKey];
+        if (cached && cached.news_adjustment_applied) {
+          return forecasts[rangeKey];
+        }
+        state.forecastLoading = true;
+        renderAll();
+        try {
+          const response = await fetch(`/api/forecast/${commodityId}?range=${encodeURIComponent(rangeKey)}`);
+          if (!response.ok) {
+            throw new Error(`Forecast HTTP ${response.status}`);
+          }
+          const forecast = await response.json();
+          forecasts[rangeKey] = forecast;
+          return forecast;
+        } finally {
+          state.forecastLoading = false;
+        }
+      }
+
+      function activeNews() {
+        return state.newsCache.get(state.selectedCommodityId) || { items: [], risk_level: "unknown" };
+      }
+
+      async function ensureNews(commodityId) {
+        if (state.newsCache.has(commodityId)) {
+          return state.newsCache.get(commodityId);
+        }
+        state.newsLoading = true;
+        renderAll();
+        try {
+          const response = await fetch(`/api/news/${commodityId}`);
+          if (!response.ok) {
+            throw new Error(`News HTTP ${response.status}`);
+          }
+          const payload = await response.json();
+          state.newsCache.set(commodityId, payload);
+          return payload;
+        } finally {
+          state.newsLoading = false;
+        }
+      }
+
+      function visibleCompareIds() {
+        const picked = state.compareIds.filter((id) => state.commodityMap.has(id));
+        if (!picked.includes(state.selectedCommodityId)) {
+          picked.unshift(state.selectedCommodityId);
+        }
+        return picked.slice(0, 4);
+      }
+
+      function renderCommodityList() {
+        commodityListEl.innerHTML = "";
+        state.commodities.forEach((commodity) => {
+          const isActive = commodity.id === state.selectedCommodityId;
+          const checked = state.compareIds.includes(commodity.id);
+          const checkboxId = `compare-${commodity.id}`;
+          const item = document.createElement("div");
+          item.className = `commodity-item${isActive ? " active" : ""}`;
+          item.innerHTML = `
+            <div class="commodity-swatch" style="background:${commodity.accent}"></div>
+            <button type="button" class="commodity-main" style="all:unset; display:block; cursor:pointer;">
+              <div class="commodity-name">${commodity.short_name}</div>
+              <div class="commodity-unit">${commodity.unit}</div>
+            </button>
+            <label for="${checkboxId}" style="display:grid; place-items:center; cursor:pointer;">
+              <input id="${checkboxId}" class="commodity-check" type="checkbox" ${checked ? "checked" : ""} />
+            </label>
+          `;
+
+          item.querySelector(".commodity-main").addEventListener("click", () => {
+            state.selectedCommodityId = commodity.id;
+            Promise.all([
+              ensureForecast(state.selectedCommodityId, state.range),
+              ensureNews(state.selectedCommodityId),
+            ]).finally(() => renderAll());
+          });
+
+          item.querySelector("input").addEventListener("change", (event) => {
+            if (event.target.checked) {
+              if (!state.compareIds.includes(commodity.id) && state.compareIds.length < 4) {
+                state.compareIds.push(commodity.id);
+              } else if (state.compareIds.length >= 4) {
+                event.target.checked = false;
+              }
+            } else {
+              state.compareIds = state.compareIds.filter((id) => id !== commodity.id);
+            }
+            renderAll();
+          });
+
+          commodityListEl.appendChild(item);
+        });
+      }
+
+      function renderRangeButtons() {
+        rangeButtonsEl.innerHTML = "";
+        Object.keys(RANGE_CONFIG).forEach((rangeKey) => {
+          const button = document.createElement("button");
+          button.className = `range-button${rangeKey === state.range ? " active" : ""}`;
+          button.textContent = rangeKey;
+          button.addEventListener("click", () => {
+            state.range = rangeKey;
+            ensureForecast(state.selectedCommodityId, state.range).finally(() => renderAll());
+          });
+          rangeButtonsEl.appendChild(button);
+        });
+      }
+
+      function renderHeader() {
+        const commodity = activeCommodity();
+        const compareIds = visibleCompareIds();
+        const forecast = activeForecast();
+        const projection = forecast.forecast || [];
+        const forecastLast = projection[projection.length - 1];
+        const news = activeNews();
+        document.getElementById("heroEyebrow").textContent = state.compareMode
+          ? "Commodities Selected"
+          : "Commodity Selected";
+        document.getElementById("heroAccentDot").style.color = commodity.accent;
+        document.getElementById("heroModelPill").textContent = forecast.order
+          ? `${forecast.model} (${forecast.order.join(",")})`
+          : `${forecast.model || "Forecast model"}${forecast.aic ? ` · AIC ${forecast.aic}` : ""}`;
+        document.getElementById("heroTitle").textContent = state.compareMode
+          ? `${compareIds.length} commodities selected`
+          : commodity.name;
+        document.getElementById("heroSubtitle").textContent = state.compareMode
+          ? `${compareIds.map((id) => state.commodityMap.get(id).short_name).join(" · ")}. Normalized performance from the start of the selected window, overlaid for cross-market relative moves.`
+          : `${commodity.definition || commodity.short_name}. ${commodity.location_note || ""}`;
+        document.getElementById("heroCategory").textContent = commodity.category || "Market Note";
+        document.getElementById("heroSpot").textContent = `${fmtNumber(commodity.stats.current_price, 3)} ${commodity.unit}`;
+        document.getElementById("heroForecast").textContent = forecastLast
+          ? `${fmtNumber(forecastLast.value, 3)} ${commodity.unit}`
+          : "N/A";
+        document.getElementById("heroMove").textContent = fmtPercent(forecast.implied_change_pct);
+        document.getElementById("heroMove").className = `hero-metric-value ${metricClass(forecast.implied_change_pct)}`;
+        document.getElementById("heroForecastCall").textContent = state.forecastLoading
+          ? `Updating forecast for ${state.range} window...`
+          : forecast.implied_change_pct === null || forecast.implied_change_pct === undefined
+          ? `${commodity.location_note || "Insufficient forecast signal"}`
+          : `${forecast.implied_change_pct >= 0 ? "Upside bias" : "Downside bias"} over ${forecast.horizon_label}`;
+        document.getElementById("heroForecastSupport").textContent = state.forecastLoading
+          ? "Re-fitting the forecast using the selected history window."
+          : state.compareMode
+          ? "Compare mode normalizes each selected contract from the start of the chosen range."
+          : `${commodity.short_name} is tracked as a ${commodity.category?.toLowerCase() || "petroleum"} contract. Forecast trained on ${forecast.training_range || state.range} history ending ${forecast.window_end || commodity.stats.latest_date}. Global event risk is ${news.risk_level || forecast.news_risk_level || "unknown"}, and the current price-impact signal is ${forecast.news_event_label || news.event_label || "neutral"}.`;
+      }
+
+      function metricClass(value) {
+        if (value === null || value === undefined || Number.isNaN(value)) return "";
+        return value >= 0 ? "positive" : "negative";
+      }
+
+      function latestVolatilityValue(commodity) {
+        const series = commodity.analytics?.rolling_volatility_30d || [];
+        return series.length ? series[series.length - 1].value : null;
+      }
+
+      function volatilityRegimeLabel(value) {
+        if (value === null || value === undefined || Number.isNaN(value)) return "unknown";
+        if (value < 1.5) return "calm";
+        if (value < 3) return "elevated";
+        return "high";
+      }
+
+      function buildForecastNarrative(commodity, forecast) {
+        const move = forecast.implied_change_pct;
+        const vol = latestVolatilityValue(commodity);
+        const volLabel = volatilityRegimeLabel(vol);
+        const modelText = forecast.order
+          ? `${forecast.model}(${forecast.order.join(",")})`
+          : (forecast.model || "benchmark model");
+        const runnerUp = forecast.candidate_scores?.[1]?.model;
+        const toneLabel = forecast.news_tone_label || "neutral";
+        const toneScore = forecast.news_tone_score;
+        const eventLabel = forecast.news_event_label || "neutral";
+        const eventScore = forecast.news_event_score;
+        const transformerText = forecast.news_transformer_available
+          ? `A transformer direction model is active${forecast.news_transformer_applied ? " and is adjusting the path" : ""} in the event stack.`
+          : "Transformer direction is unavailable, so the event stack is running on economics-aware rules.";
+        const moveText = move === null || move === undefined
+          ? "does not produce a strong directional signal"
+          : move > 1
+          ? `points higher by about ${fmtPercent(move)}`
+          : move < -1
+          ? `points lower by about ${fmtPercent(move)}`
+          : `stays broadly flat at ${fmtPercent(move)}`;
+        const confidenceText = forecast.validation_rmse
+          ? `Recent holdout error is ${fmtNumber(forecast.validation_rmse, 3)} ${commodity.unit}, so this should be read as a short-horizon bias rather than a hard target.`
+          : "This should be read as a directional bias rather than a hard target.";
+        const comparisonText = runnerUp
+          ? `${modelText} beat ${runnerUp} on the selected ${forecast.training_range || state.range} training window.`
+          : `${modelText} is the active model on the selected ${forecast.training_range || state.range} training window.`;
+        const eventText = `Current event signal is ${eventLabel}${eventScore !== null && eventScore !== undefined ? ` (${fmtNumber(eventScore, 2)})` : ""}, while headline tone is ${toneLabel}${toneScore !== null && toneScore !== undefined ? ` (${fmtNumber(toneScore, 2)})` : ""}. ${transformerText}`;
+        const historyText = forecast.news_headlines_count
+          ? `The event stack is anchored to a rolling multi-day headline panel rather than a single snapshot.`
+          : "";
+
+        return `${commodity.short_name} currently trades at ${fmtNumber(commodity.stats.current_price, 3)} ${commodity.unit}, and the ${forecast.horizon_label || "next horizon"} forecast ${moveText}. Volatility is ${volLabel}${vol !== null && vol !== undefined ? ` at ${fmtNumber(vol, 2)}%` : ""}, which means near-term moves can still be noisy even when the direction is stable. ${comparisonText} ${eventText} ${historyText} ${confidenceText}`;
+      }
+
+      function renderStats() {
+        const commodity = activeCommodity();
+        const stats = commodity.stats;
+        const forecast = activeForecast();
+        const cards = [
+          ["Current", `${fmtNumber(stats.current_price, 3)} ${commodity.unit}`],
+          ["1W Forecast", `${fmtNumber(forecast.forecast?.[forecast.forecast.length - 1]?.value, 3)} ${commodity.unit}`],
+          ["All-Time High", `${fmtNumber(stats.all_time_high, 3)} ${commodity.unit}<div class="subtitle" style="margin-top:6px;">${stats.all_time_high_date || "N/A"}</div>`],
+          ["All-Time Low", `${fmtNumber(stats.all_time_low, 3)} ${commodity.unit}<div class="subtitle" style="margin-top:6px;">${stats.all_time_low_date || "N/A"}</div>`],
+          ["Forecast", fmtPercent(forecast.implied_change_pct), forecast.implied_change_pct],
+          ["Model", forecast.order ? `${forecast.model} (${forecast.order.join(",")})` : forecast.model || "N/A"],
+          ["Latest", stats.latest_date],
+        ];
+        const statsGrid = document.getElementById("statsGrid");
+        statsGrid.innerHTML = cards
+          .map(([label, value, tone]) => {
+            return `<div class="stats-card">
+              <div class="meta-label">${label}</div>
+              <div class="stats-value ${metricClass(tone)}">${value}</div>
+            </div>`;
+          })
+          .join("");
+      }
+
+      function renderMainChart() {
+        const commodity = activeCommodity();
+        const compareIds = visibleCompareIds();
+        const isCompare = state.compareMode && compareIds.length >= 2;
+        const forecast = activeForecast();
+        const history = forecast.history || [];
+        const projection = forecast.forecast || [];
+
+        document.getElementById("mainChartTitle").textContent = isCompare
+          ? "Normalized Relative Performance"
+          : "Forecast Path";
+        document.getElementById("mainChartMeta").textContent = isCompare
+          ? "Percent change from range start"
+          : `${forecast.model || "Forecast"} · ${forecast.horizon_label || ""}`;
+
+        if (isCompare) {
+          const traces = compareIds.map((id) => {
+            const item = state.commodityMap.get(id);
+            const points = filterPoints(item.data);
+            const baseline = points[0]?.price ?? 0;
+            const normalized = points.map((point) =>
+              baseline ? ((point.price / baseline) - 1) * 100 : 0
+            );
+            return {
+              x: points.map((point) => point.date),
+              y: normalized,
+              mode: "lines",
+              name: item.short_name,
+              line: { color: item.accent, width: 2.4 },
+            };
+          });
+
+          Plotly.react(
+            "mainChart",
+            traces,
+            {
+              ...plotTheme,
+              yaxis: { ...plotTheme.yaxis, ticksuffix: "%"},
+            },
+            { responsive: true, displayModeBar: false }
+          );
+          return;
+        }
+
+        Plotly.react(
+          "mainChart",
+          [
+            {
+              x: history.map((point) => point.date),
+              y: history.map((point) => point.value),
+              mode: "lines",
+              name: "History",
+              line: { color: commodity.accent, width: 2.4 },
+            },
+            {
+              x: projection.map((point) => point.date),
+              y: projection.map((point) => point.value),
+              mode: "lines",
+              name: "Forecast",
+              line: { color: "#ffffff", width: 2.4, dash: "dash" },
+            },
+            {
+              x: projection.map((point) => point.date),
+              y: projection.map((point) => point.upper),
+              mode: "lines",
+              line: { color: "rgba(255,255,255,0)" },
+              showlegend: false,
+              hoverinfo: "skip",
+            },
+            {
+              x: projection.map((point) => point.date),
+              y: projection.map((point) => point.lower),
+              mode: "lines",
+              line: { color: "rgba(255,255,255,0)" },
+              fill: "tonexty",
+              fillcolor: `${commodity.accent}22`,
+              name: "95% band",
+            },
+          ],
+          {
+            ...plotTheme,
+            yaxis: { ...plotTheme.yaxis, title: commodity.unit },
+          },
+          { responsive: true, displayModeBar: false }
+        );
+      }
+
+      function renderHistoryChart() {
+        const commodity = activeCommodity();
+        const points = filterPoints(commodity.data);
+        Plotly.react(
+          "historyChart",
+          [
+            {
+              x: points.map((point) => point.date),
+              y: points.map((point) => point.price),
+              mode: "lines",
+              name: commodity.short_name,
+              line: { color: commodity.accent, width: 2.6 },
+              fill: "tozeroy",
+              fillcolor: `${commodity.accent}20`,
+            },
+          ],
+          {
+            ...plotTheme,
+            showlegend: false,
+            yaxis: { ...plotTheme.yaxis, title: commodity.unit },
+          },
+          { responsive: true, displayModeBar: false }
+        );
+      }
+
+      function renderVolatilityChart() {
+        const commodity = activeCommodity();
+        const points = filterPoints(commodity.analytics.rolling_volatility_30d);
+        Plotly.react(
+          "volChart",
+          [
+            {
+              x: points.map((point) => point.date),
+              y: points.map((point) => point.value),
+              mode: "lines",
+              line: { color: commodity.accent, width: 2 },
+              fill: "tozeroy",
+              fillcolor: `${commodity.accent}18`,
+              name: "30D Vol",
+            },
+          ],
+          {
+            ...plotTheme,
+            showlegend: false,
+            yaxis: { ...plotTheme.yaxis, ticksuffix: "%" },
+          },
+          { responsive: true, displayModeBar: false }
+        );
+      }
+
+      function renderMeta() {
+        const source = state.bootstrap.source_info || {};
+        document.getElementById("lastUpdated").textContent = source.release_date
+          ? `Release date ${source.release_date} · ${source.cadence || "Weekly"} cadence`
+          : (state.bootstrap.loaded_at ? `EIA spot prices · updated ${new Date(state.bootstrap.loaded_at).toLocaleString()}` : "");
+        document.getElementById("nextRelease").textContent = source.next_release_date
+          ? `Next release ${source.next_release_date}`
+          : (source.error ? `Source check issue: ${source.error}` : "");
+        compareToggleEl.checked = state.compareMode;
+        compareStatusEl.classList.toggle("active", state.compareMode);
+        compareStatusTextEl.textContent = state.compareMode
+          ? `Compare on · ${visibleCompareIds().length} selected`
+          : "Compare off";
+      }
+
+      function renderNewsPanel() {
+        const news = activeNews();
+        const forecast = activeForecast();
+        document.getElementById("newsMeta").textContent = state.newsLoading
+          ? "Refreshing news and event context..."
+          : `Top 5 most relevant and recent articles · risk backdrop ${news.risk_level || forecast.news_risk_level || "unknown"}`;
+        const items = news.items || [];
+        document.getElementById("newsPanel").innerHTML = items.length
+          ? `
+            ${items.slice(0, 5).map((item) => `
+              <div class="stats-card" style="padding: 14px 16px; margin-top: 10px;">
+                <div class="meta-label">${item.source || "News"} · ${item.published_at || ""}</div>
+                <div style="margin-top: 8px; font-size: 15px; line-height: 1.55;">
+                  <a href="${item.link}" target="_blank" rel="noreferrer" style="color:#eef2ff; text-decoration:none;">${item.title}</a>
+                </div>
+                <div class="subtitle" style="margin-top: 8px;">
+                  Price signal ${item.price_signal_label || "neutral"}${item.price_signal !== null && item.price_signal !== undefined ? ` (${fmtNumber(item.price_signal, 2)})` : ""} · Tone ${item.tone_label || "neutral"}${item.tone_score !== null && item.tone_score !== undefined ? ` (${fmtNumber(item.tone_score, 2)})` : ""}
+                </div>
+              </div>
+            `).join("")}
+          `
+          : `
+            <div class="stats-card" style="padding: 14px 16px; margin-top: 10px;">
+              <div class="meta-label">Top Commodity Headlines</div>
+              <div class="subtitle" style="margin-top: 8px; line-height: 1.7;">
+                Live commodity-specific headlines are thin right now, so this panel is holding the latest macro energy backdrop. Forecast adjustment still uses the economics-aware event stack and transformer direction when headlines are available.
+              </div>
+            </div>
+          `;
+      }
+
+      function renderForecastSummary() {
+        const commodity = activeCommodity();
+        const forecast = activeForecast();
+        const projection = forecast.forecast || [];
+        const first = projection[0];
+        const last = projection[projection.length - 1];
+        document.getElementById("forecastSummaryMeta").textContent = forecast.horizon_label || "Projected path";
+        document.getElementById("forecastMeta").textContent = forecast.order
+          ? `${forecast.model || "Forecast"} (${forecast.order.join(",")})`
+          : `${forecast.model || "Forecast"}${forecast.aic ? ` · AIC ${forecast.aic}` : " · baseline / non-likelihood"}`;
+        document.getElementById("forecastSummary").innerHTML = `
+          <div class="stats-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+            <div class="stats-card">
+              <div class="meta-label">Model</div>
+              <div class="stats-value" style="font-size: 18px;">${forecast.order ? `${forecast.model} (${forecast.order.join(",")})` : forecast.model || "N/A"}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">Horizon</div>
+              <div class="stats-value" style="font-size: 18px;">${forecast.horizon_label || "N/A"}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">Next Print</div>
+              <div class="stats-value" style="font-size: 18px;">${first ? `${fmtNumber(first.value, 3)} ${commodity.unit}` : "N/A"}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">End Horizon</div>
+              <div class="stats-value ${metricClass(forecast.implied_change_pct)}" style="font-size: 18px;">${last ? `${fmtNumber(last.value, 3)} ${commodity.unit}` : "N/A"}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">Implied Move</div>
+              <div class="stats-value ${metricClass(forecast.implied_change_pct)}" style="font-size: 18px;">${fmtPercent(forecast.implied_change_pct)}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">${forecast.aic !== null && forecast.aic !== undefined ? "AIC" : "Model Basis"}</div>
+              <div class="stats-value" style="font-size: 18px;">${forecast.aic !== null && forecast.aic !== undefined ? forecast.aic : "Benchmark model"}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">Validation RMSE</div>
+              <div class="stats-value" style="font-size: 18px;">${forecast.validation_rmse ?? "N/A"}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">Runner-Up</div>
+              <div class="stats-value" style="font-size: 18px;">${forecast.candidate_scores?.[1] ? `${forecast.candidate_scores[1].model} (${forecast.candidate_scores[1].rmse})` : "N/A"}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">Price Impact Signal</div>
+              <div class="stats-value ${metricClass(forecast.news_event_score)}" style="font-size: 18px;">${forecast.news_event_label || "neutral"}${forecast.news_event_score !== null && forecast.news_event_score !== undefined ? ` (${fmtNumber(forecast.news_event_score, 2)})` : ""}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">NLP Market Tone</div>
+              <div class="stats-value ${metricClass(forecast.news_tone_score)}" style="font-size: 18px;">${forecast.news_tone_label || "neutral"}${forecast.news_tone_score !== null && forecast.news_tone_score !== undefined ? ` (${fmtNumber(forecast.news_tone_score, 2)})` : ""}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">Event Engine</div>
+              <div class="stats-value" style="font-size: 18px;">${forecast.news_transformer_applied ? "Transformer + rules" : forecast.news_transformer_available ? "Transformer ready" : "Economics rules"}</div>
+            </div>
+            <div class="stats-card">
+              <div class="meta-label">News Adjustment</div>
+              <div class="stats-value ${metricClass(forecast.news_adjustment_pct)}" style="font-size: 18px;">${forecast.news_adjustment_applied ? `${fmtPercent(forecast.news_adjustment_pct)}` : "Not applied"}</div>
+            </div>
+          </div>
+          <div class="stats-card" style="margin-top: 12px; padding: 16px 18px;">
+            <div class="meta-label">Market Read</div>
+            <div class="subtitle" style="margin-top: 10px; color: #d3dcf7; font-size: 14px; line-height: 1.7;">
+              ${buildForecastNarrative(commodity, forecast)}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderAll() {
+        renderCommodityList();
+        renderRangeButtons();
+        renderHeader();
+        renderStats();
+        renderMeta();
+        renderMainChart();
+        renderHistoryChart();
+        renderVolatilityChart();
+        renderForecastSummary();
+        renderNewsPanel();
+      }
+
+      async function init() {
+        compareToggleEl.addEventListener("change", () => {
+          state.compareMode = compareToggleEl.checked;
+          renderAll();
+        });
+
+        try {
+          state.bootstrap = window.__BOOTSTRAP__ || null;
+          if (!state.bootstrap) {
+            const response = await fetch("/api/bootstrap");
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            state.bootstrap = await response.json();
+          }
+          state.commodities = state.bootstrap.commodities;
+          state.commodityMap = new Map(state.commodities.map((item) => [item.id, item]));
+          state.forecastCache = new Map(
+            state.commodities.map((item) => [item.id, { "1Y": item.forecast }])
+          );
+          if (!state.commodities.length) {
+            throw new Error("No commodity data was loaded");
+          }
+          state.selectedCommodityId = state.commodities[0].id;
+          state.compareIds = state.commodities.slice(0, 2).map((item) => item.id);
+          await Promise.all([
+            ensureForecast(state.selectedCommodityId, state.range),
+            ensureNews(state.selectedCommodityId),
+          ]);
+          renderAll();
+        } catch (error) {
+          document.getElementById("heroTitle").textContent = "Dataset unavailable";
+          document.getElementById("heroSubtitle").textContent = `${error.message}. Place PET_PRI_SPT_S1_D.xls in /Users/jaredmaksoud_1/dashboard/data or ~/Downloads and restart uvicorn.`;
+        } finally {
+          loadingEl.classList.add("hidden");
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>

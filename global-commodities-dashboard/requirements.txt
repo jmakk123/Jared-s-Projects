@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+xlrd==1.2.0
+pandas
+numpy
+statsmodels
+arch
+transformers
+torch

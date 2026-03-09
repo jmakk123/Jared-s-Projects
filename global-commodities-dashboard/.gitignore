@@ -1,0 +1,5 @@
+.DS_Store
+__pycache__/
+*.pyc
+data/bootstrap_cache.json
+data/news_history.json
