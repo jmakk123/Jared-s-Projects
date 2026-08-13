@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jared Maksoud — AI &amp; Machine Learning Engineer</title>
+<meta name="description" content="Jared Maksoud builds agentic AI systems and the data infrastructure beneath them. MS in Applied Data Science at the University of Chicago.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="mark" href="#top"><span>JM</span></a>
+    <nav aria-label="Sections">
+      <a href="#work">Work</a>
+      <a href="#field">Field Work</a>
+      <a href="#projects">Projects</a>
+      <a href="#education">Education</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow">Chicago &nbsp;/&nbsp; New York</p>
+    <h1>Jared&nbsp;Maksoud</h1>
+    <p class="lede">
+      I build AI systems meant to improve people's lives, and I want to build them
+      across borders rather than only inside them.
+    </p>
+    <p class="sub">
+      That goal is why I paired a data science degree with Middle Eastern Studies and
+      learned Arabic: technology travels further when you can speak to the people it is
+      supposed to serve. Founding engineer of <a href="#ctx">Context&nbsp;Box</a>, currently
+      completing an MS in Applied Data Science at the University of Chicago, building
+      production AI for an industry client as my <a href="#pk">capstone</a>, and serving as the
+      university's <a href="#uchicago-ai">subject-matter expert on Claude chat, Cowork, and
+      Code</a>.
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="#projects">See the work</a>
+      <a class="btn" href="https://github.com/jmakk123/Jared-s-Projects" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn" href="https://www.linkedin.com/in/jared-maksoud-183551255/" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="btn" href="mailto:jaredmaksoud@gmail.com">Email</a>
+    </div>
+  </div>
+  <div class="hero-glow" aria-hidden="true"></div>
+</section>
+
+<!-- ============ CURRENTLY ============ -->
+<section class="strip">
+  <div class="wrap">
+    <h2 class="strip-h">Currently</h2>
+    <div class="now-grid">
+      <div class="now">
+        <span class="now-role">Co-Founder</span>
+        <span class="now-org">Context Box</span>
+        <span class="now-note">Personal memory layer for LLM assistants</span>
+      </div>
+      <div class="now">
+        <span class="now-role">AI Software Engineer</span>
+        <span class="now-org">Power Kiosk</span>
+        <span class="now-note">MS capstone: agentic market intelligence for energy brokers</span>
+      </div>
+      <div class="now">
+        <span class="now-role">AI Developer &amp; Trainer</span>
+        <span class="now-org">UChicago IT Services</span>
+        <span class="now-note">Campus-wide subject-matter expert on Claude chat, Cowork, and Code</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EXPERIENCE ============ -->
+<section id="work" class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2><span class="num">01</span> Experience</h2>
+      <p>Founding a company, shipping a capstone for a real client, and teaching a
+        university how to use agentic AI, currently at the same time. Most recent first.</p>
+    </div>
+
+    <ol class="timeline">
+
+      <li class="tl-item" id="uchicago-ai">
+        <div class="tl-meta">
+          <span class="tl-date">Jun 2026 &ndash; Present</span>
+          <span class="tl-loc">Chicago, IL</span>
+        </div>
+        <div class="tl-body">
+          <h3>University of Chicago <span class="tl-sub">IT Services</span></h3>
+          <p class="tl-role">AI Developer &amp; Trainer</p>
+          <ul>
+            <li>Build rapid prototypes and production automations alongside senior developers
+              using Python (FastAPI, Flask, Streamlit), Docker, PHP, and Azure OpenAI and
+              Claude APIs, moving validated proofs of concept into deployed,
+              production-hardened internal tools.</li>
+            <li>Serve as the subject-matter expert on Claude, Claude Code, and Claude Cowork
+              for enterprise users campus-wide, leading hands-on workshops and 1:1 debugging
+              sessions and authoring the technical documentation that scales adoption across
+              skill levels.</li>
+          </ul>
+          <div class="tags">
+            <span>Python</span><span>FastAPI</span><span>Docker</span><span>Azure OpenAI</span>
+            <span>Claude Code</span><span>Technical Enablement</span>
+          </div>
+        </div>
+      </li>
+
+      <li class="tl-item" id="ctx">
+        <div class="tl-meta">
+          <span class="tl-date">Mar 2026 &ndash; Present</span>
+          <span class="tl-loc">New York, NY</span>
+        </div>
+        <div class="tl-body">
+          <h3>Context Box <span class="tl-sub">Personal memory layer for LLM assistants</span></h3>
+          <p class="tl-role">Co-Founder</p>
+          <ul>
+            <li>Architected and shipped a full-stack SaaS on AWS ECS as founding engineer:
+              Next.js and TypeScript frontend, Fastify API, Python and Celery ingestion
+              worker, and a custom MCP server that parses ChatGPT, Claude, Gemini, and
+              Copilot exports into a searchable personal memory layer.</li>
+            <li>Built an OAuth 2.1 authorization server with SSE and Streamable HTTP
+              transports serving real-time semantic recall over pgvector and HNSW vector
+              search across locally-run embeddings.</li>
+            <li>Diagnosed and fixed production ingestion bottlenecks under load, cutting peak
+              memory 2.4x to eliminate OOM failures on 24K-chunk exports, lifting embedding
+              throughput 1.6x via thread-parallel inference and database write throughput 5x
+              via batched inserts.</li>
+          </ul>
+          <div class="tags">
+            <span>Next.js</span><span>TypeScript</span><span>Fastify</span><span>Celery</span>
+            <span>MCP</span><span>pgvector / HNSW</span><span>OAuth 2.1</span><span>AWS ECS</span>
+          </div>
+        </div>
+      </li>
+
+      <li class="tl-item" id="pk">
+        <div class="tl-meta">
+          <span class="tl-date">Mar 2026 &ndash; Present</span>
+          <span class="tl-loc">Chicago, IL</span>
+        </div>
+        <div class="tl-body">
+          <h3>Power Kiosk <span class="tl-sub">MS capstone, industry-partnered</span></h3>
+          <p class="tl-role">AI Software Engineer</p>
+          <p class="tl-context">Built as the capstone of my MS in Applied Data Science, in
+            partnership with Power Kiosk as the industry client.</p>
+          <ul>
+            <li>Eliminated hours of manual analysis daily for energy brokers by architecting a
+              multi-modal AI agent system that autonomously synthesized structured market
+              signals (market clearing prices, congestion metrics, fuel price movements,
+              weather variables) and unstructured industry news into briefings explaining what
+              changed in the market, why it occurred, and what risks and opportunities
+              emerged.</li>
+            <li>Turned quantitative market signals into human-readable business insight by
+              engineering modular LLM pipelines and reusable data connectors on MCP and RAG
+              architectures, fusing time-series analytics with generative AI.</li>
+            <li>Gated every briefing on correctness by building a governed evaluation interface
+              that validates summary quality before output reaches brokers.</li>
+          </ul>
+          <div class="tags">
+            <span>Agentic AI</span><span>MCP</span><span>RAG</span><span>LLM Orchestration</span>
+            <span>Time-Series</span><span>Model Evaluation</span>
+          </div>
+        </div>
+      </li>
+
+      <li class="tl-item">
+        <div class="tl-meta">
+          <span class="tl-date">Sep 2025 &ndash; Present</span>
+          <span class="tl-loc">Chicago, IL</span>
+        </div>
+        <div class="tl-body">
+          <h3>University of Chicago <span class="tl-sub">UChicago Pub</span></h3>
+          <p class="tl-role">Office Manager</p>
+          <ul>
+            <li>Manage all financial operations, including payroll, accounting, and inventory,
+              for a high-volume venue.</li>
+            <li>Leveraged historical sales data to optimize pricing and events, growing monthly
+              revenue roughly 15%.</li>
+          </ul>
+          <div class="tags"><span>Financial Operations</span><span>Excel</span><span>Pricing Analysis</span></div>
+        </div>
+      </li>
+
+      <li class="tl-item">
+        <div class="tl-meta">
+          <span class="tl-date">Mar 2025 &ndash; Jun 2025</span>
+          <span class="tl-loc">Chicago, IL</span>
+        </div>
+        <div class="tl-body">
+          <h3>Pesticide Action Network</h3>
+          <p class="tl-role">Data Analytics &amp; Intelligence Intern</p>
+          <ul>
+            <li>Architected Python ETL pipelines to cleanse, integrate, and transform large
+              public datasets, translating stakeholder business questions into a data
+              visualization dashboard and validating outputs to ensure accuracy before
+              delivery to non-technical audiences.</li>
+          </ul>
+          <div class="tags"><span>Python</span><span>ETL</span><span>Geospatial</span><span>Data Validation</span></div>
+          <p class="tl-link"><a href="#pan">See the field work &rarr;</a></p>
+        </div>
+      </li>
+
+      <li class="tl-item">
+        <div class="tl-meta">
+          <span class="tl-date">Sep 2024 &ndash; Jun 2025</span>
+          <span class="tl-loc">Los Angeles, CA</span>
+        </div>
+        <div class="tl-body">
+          <h3>Hestia Housing Company</h3>
+          <p class="tl-role">Data Science Intern</p>
+          <ul>
+            <li>Cut manual document review work 30% by scraping and indexing large sets of
+              documents with regex-based Python scripts, then building a summary dashboard
+              that surfaced the extracted data for operational teams across property
+              management.</li>
+            <li>Worked cross-functionally with operations, product, and executive stakeholders
+              to understand exactly how their workflows functioned, documenting methodology
+              and building outputs teams could independently use and trust.</li>
+          </ul>
+          <div class="tags"><span>Python</span><span>Regex</span><span>Document Indexing</span><span>Dashboards</span></div>
+        </div>
+      </li>
+
+      <li class="tl-item">
+        <div class="tl-meta">
+          <span class="tl-date">Sep 2024 &ndash; Dec 2024</span>
+          <span class="tl-loc">Chicago, IL</span>
+        </div>
+        <div class="tl-body">
+          <h3>Building Decarbonization Coalition</h3>
+          <p class="tl-role">AI/ML Engineering Intern</p>
+          <ul>
+            <li>Designed and deployed a production AI agent pipeline from scratch to answer
+              stakeholder questions about Thermal Energy Network pilot projects, combining a
+              web scraper over the NY Department of Public Service database, NVIDIA RAG
+              embeddings, a Llama Instruct model, ChromaDB vector storage, and a LangChain
+              command-line interface.</li>
+            <li>Documented system architecture and implementation patterns for cross-functional
+              engineering and product stakeholders, collaborating across teams to align
+              technical approach with business use cases.</li>
+          </ul>
+          <div class="tags">
+            <span>LangChain</span><span>ChromaDB</span><span>NVIDIA RAG</span><span>Llama Instruct</span>
+            <span>Web Scraping</span>
+          </div>
+          <p class="tl-link"><a href="#bdc">See the field work &rarr;</a></p>
+        </div>
+      </li>
+
+      <li class="tl-item">
+        <div class="tl-meta">
+          <span class="tl-date">Aug 2024 &ndash; Sep 2024</span>
+          <span class="tl-loc">Irvine, CA</span>
+        </div>
+        <div class="tl-body">
+          <h3>Ensemble Media</h3>
+          <p class="tl-role">Software Development &amp; Testing Intern</p>
+          <ul>
+            <li>Developed production Python and JavaScript modules for inflight-entertainment
+              video games, using Android SDK and ADB to build, deploy, and debug across SoCal
+              device lab environments. The software updates now run on international
+              commercial flights.</li>
+            <li>Wrote Python automation scripts driving end-to-end testing pipelines, using
+              Unix and Git for version control and collaborative code review in a fast-moving
+              agile workflow.</li>
+          </ul>
+          <div class="tags">
+            <span>Python</span><span>JavaScript</span><span>Android SDK</span><span>ADB</span>
+            <span>Test Automation</span><span>Git</span>
+          </div>
+        </div>
+      </li>
+
+    </ol>
+  </div>
+</section>
+
+<!-- ============ FIELD WORK / FEATURED ============ -->
+<section id="field" class="section alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2><span class="num">02</span> Field Work</h2>
+      <p>The part I care most about: three engagements where the work left the notebook and
+        went to an organization that needed it. Each one has something public to show.</p>
+    </div>
+
+    <!-- BDC -->
+    <article class="feature" id="bdc">
+      <div class="feature-media">
+        <a href="https://www.youtube.com/watch?v=iEjx887nnGY" target="_blank" rel="noopener" class="media-link">
+          <img src="assets/bdc-video-thumb.jpg" alt="Video thumbnail: Building a Chatbot to Support Clean Energy for Buildings, UChicago DSI and Building Decarbonization Coalition">
+          <span class="play" aria-hidden="true">&#9654;</span>
+          <span class="media-cap">Watch: building the clean-energy chatbot</span>
+        </a>
+      </div>
+      <div class="feature-body">
+        <p class="feature-kicker">Autumn 2024 &nbsp;/&nbsp; UChicago Data Science Clinic</p>
+        <h3>An LLM chatbot for geothermal energy policy</h3>
+        <p>
+          Evaluating whether Thermal Energy Network pilot projects succeed meant reading across
+          scattered PDFs in a New York state government database. I built an AI agent pipeline
+          that made that corpus conversational: a web scraper pulling filings from the NY
+          Department of Public Service, NVIDIA RAG embeddings for retrieval, ChromaDB for
+          indexed vector storage, and a Llama Instruct model behind a LangChain CLI, answering
+          stakeholder questions with precise document references.
+        </p>
+        <div class="tags">
+          <span>LangChain</span><span>ChromaDB</span><span>NVIDIA RAG</span><span>Llama Instruct</span>
+        </div>
+        <div class="links">
+          <a href="https://github.com/jmakk123/Jared-s-Projects/tree/main/2024-autumn-building-decarbon" target="_blank" rel="noopener">Source code</a>
+          <a href="https://www.youtube.com/watch?v=iEjx887nnGY" target="_blank" rel="noopener">Demo video</a>
+          <a href="https://clinic.ds.uchicago.edu/projects/one-pagers/2025-winter/Building%20Decarbonization%20Coalition.pdf" target="_blank" rel="noopener">Project brief (PDF)</a>
+        </div>
+        <figure class="inline-fig">
+          <img src="assets/bdc-arch-pipeline.png" alt="Diagram of the retrieval-augmented generation pipeline: query augmentation, vector database retriever, reciprocal rank fusion with reranking, and response generation">
+          <figcaption>The retrieval pipeline: query augmentation, vector retrieval, reciprocal rank fusion, reranking, response generation.</figcaption>
+        </figure>
+      </div>
+    </article>
+
+    <!-- PAN -->
+    <article class="feature reverse" id="pan">
+      <div class="feature-media">
+        <a href="https://pesticideinfo.org/pesticide-maps/ca-pesticide-map" target="_blank" rel="noopener" class="media-link plain">
+          <img src="assets/pan-fig-map.png" alt="Map of California showing all public schools, schools within high pesticide risk areas, and high pesticide risk regions concentrated in the Central Valley">
+          <span class="media-cap">14.9% of CA schools sit within a mile of heavy pesticide use. Explore the public map.</span>
+        </a>
+      </div>
+      <div class="feature-body">
+        <p class="feature-kicker">Spring 2025 &nbsp;/&nbsp; UChicago Data Science Clinic</p>
+        <h3>Who actually breathes California's pesticides</h3>
+        <p>
+          California accounts for roughly 20% of national pesticide use, much of it classified
+          high-risk, but the public data is granular and unwieldy. Our team analyzed the
+          California Pesticide Use Report alongside US Census Bureau demographics and the
+          California State Geoportal to find who bears the exposure. Counties with the heaviest
+          high-risk pesticide use skewed toward Hispanic populations, residents without high
+          school degrees, and agricultural workers. School districts in the Central Valley saw
+          the most intense exposure, and <strong>14.9% of California public schools sit within a
+          mile of intense pesticide application areas</strong>. Use declined steadily from 2017
+          to 2022, but the exposure disparities did not.
+        </p>
+        <div class="tags">
+          <span>Python</span><span>Geospatial Analysis</span><span>Census Data</span><span>ETL</span>
+        </div>
+        <div class="links">
+          <a href="https://github.com/jmakk123/Jared-s-Projects/tree/main/2025-spring-pesticide-action-network" target="_blank" rel="noopener">Source code</a>
+          <a href="https://pesticideinfo.org/pesticide-maps/ca-pesticide-map" target="_blank" rel="noopener">Live tool</a>
+          <a href="https://clinic.ds.uchicago.edu/projects/one-pagers/2025-spring/Pesticide%20Action%20Network.pdf" target="_blank" rel="noopener">Project brief (PDF)</a>
+          <a href="https://datascience.uchicago.edu/news/new-data-tool-tracks-pesticides-impact-on-public-health-and-the-environment/" target="_blank" rel="noopener">UChicago DSI coverage</a>
+        </div>
+        <figure class="inline-fig">
+          <img src="assets/pan-fig-correlation.png" alt="Bar chart of correlations between groundwater contaminant pesticide intensity and county demographics: no high school degree 0.67, Hispanic 0.65, working in agriculture 0.41, non-Hispanic white negative 0.58">
+          <figcaption>County-level correlation between groundwater contaminant pesticide intensity and demographics.</figcaption>
+        </figure>
+      </div>
+    </article>
+
+    <!-- EPIC -->
+    <article class="feature compact" id="epic">
+      <div class="feature-body full">
+        <p class="feature-kicker">April 2024 &nbsp;/&nbsp; UChicago Energy Policy Institute</p>
+        <h3>Decarbonizing a global logistics firm</h3>
+        <p>
+          As part of Team Solar Express, I helped build a quantitative decarbonization strategy
+          for Kuehne and Nagel: hydrotreated vegetable oil and battery-electric trucks for road
+          transport, rooftop solar across warehouses to cover Scope 2 emissions, blue and green
+          methanol for maritime, and a ramp on sustainable aviation fuel. Total cost came to
+          $4.96&nbsp;billion over 16 years, financed by a 15.1% green premium against a
+          projected $16.87&nbsp;billion in free cash flow. We won the
+          <strong>Honorable Mention Quantitative Prize</strong>.
+        </p>
+        <div class="tags"><span>ML Forecasting</span><span>Financial Modeling</span><span>Climate Strategy</span></div>
+        <div class="links">
+          <a href="https://epic.uchicago.edu/news/2024-climate-case-competition-honorable-mention-quantitative-prize-team-solar-express/" target="_blank" rel="noopener">Competition write-up</a>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- ============ PROJECTS ============ -->
+<section id="projects" class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2><span class="num">03</span> Projects</h2>
+      <p>Where the methods get built and stress-tested. Everything here is from my
+        master's, September 2025 onward.</p>
+    </div>
+
+    <div class="cards">
+
+      <article class="card wide">
+        <p class="card-date">2025 &ndash; Present</p>
+        <h3>AI-Powered Personal Projects</h3>
+        <p class="card-sub">Agentic AI &amp; workflow automation</p>
+        <p>Building and shipping personal automation tools with Claude Code, Codex, and LLM
+          APIs, designing end-to-end automated workflows for research, content generation,
+          and task orchestration.</p>
+        <div class="tags"><span>Claude Code</span><span>Codex</span><span>LLM APIs</span><span>Agentic Workflows</span></div>
+      </article>
+
+      <article class="card feat">
+        <p class="card-date">Spring 2026 &nbsp;/&nbsp; Machine Learning II</p>
+        <h3>Forward 12-Month Drawdown Prediction</h3>
+        <p class="card-sub">Dual-stream neural network</p>
+        <p>Forecasts the maximum peak-to-trough drawdown a US public company will experience
+          over the next twelve months. The model reads five years of Compustat accounting
+          ratios through an LSTM and seven CRSP-derived price features through an MLP, then
+          fuses the two streams into a single forecast bounded in [&minus;1,&nbsp;0].</p>
+        <ul class="metrics">
+          <li><b>MAE 0.121</b> &nbsp;RMSE 0.161 &nbsp;R&sup2; 0.410</li>
+          <li><b>PR-AUC 0.852</b> at &minus;30% drawdown</li>
+          <li><b>0.666</b> within-year Spearman</li>
+          <li><b>0.487</b> top-decile precision</li>
+        </ul>
+        <p>Evaluated on a 2020&ndash;2023 test fold of 15,311 firm-years with a 3-seed ensemble.
+          Beats the volatility-only baseline on every primary metric.</p>
+        <div class="tags"><span>PyTorch</span><span>LSTM</span><span>Compustat / CRSP</span><span>Ensembling</span></div>
+        <div class="links">
+          <a href="https://jmakk123.github.io/MLII-Final/" target="_blank" rel="noopener">Live site</a>
+          <a href="https://github.com/jmakk123/MLII-Final" target="_blank" rel="noopener">Source code</a>
+        </div>
+        <p class="card-team">With Nick Dhaliwal, Nicholas Mikhail, and Yung Chyi Yang.</p>
+      </article>
+
+      <article class="card">
+        <p class="card-date">Spring 2026 &nbsp;/&nbsp; Computer Vision</p>
+        <h3>TableSight</h3>
+        <p class="card-sub">Hierarchical table extraction</p>
+        <p>A side-by-side dashboard for pulling structure out of table images: drop one in, see
+          what three different approaches do with it, and score them against ground truth.
+          <b>Florence-2</b>, a vision-language model LoRA fine-tuned on FinTabNet.
+          <b>UniTable</b>, a three-pass encoder-decoder that predicts table structure, then
+          bounding boxes, then per-cell text. And <b>SPARTAN</b>, an OCR-first heuristic where
+          EasyOCR finds the words, 1D K-Means clusters them into columns, and a rule set infers
+          the header rows.</p>
+        <div class="tags"><span>Florence-2</span><span>UniTable</span><span>LoRA</span><span>EasyOCR</span><span>Streamlit</span></div>
+        <p class="card-team">Team project.</p>
+      </article>
+
+      <article class="card">
+        <p class="card-date">Winter 2026 &nbsp;/&nbsp; Bayesian ML</p>
+        <h3>Bayesian DJ</h3>
+        <p class="card-sub">Recommendation under uncertainty</p>
+        <p>Most recommenders treat your taste as a fixed point estimate. This one treats it as a
+          probability distribution and updates it live. You describe a mood in plain English
+          ("late night drive, something dark and smooth"), which becomes informative Gaussian
+          priors over nine Spotify audio features. Play and skip feedback refines those into a
+          posterior via online Bayesian logistic regression with Laplace approximation, and
+          <b>Thompson sampling</b> picks each next track, balancing exploration against what it
+          already knows you like.</p>
+        <div class="tags"><span>Bayesian Inference</span><span>Thompson Sampling</span><span>Spotify API</span><span>Streamlit</span></div>
+        <p class="card-team">Team project.</p>
+      </article>
+
+      <article class="card">
+        <p class="card-date">Winter 2026 &nbsp;/&nbsp; Time Series</p>
+        <h3>Crude Oil Forecasting</h3>
+        <p class="card-sub">Classical models &amp; volatility</p>
+        <p>Roughly 9,700 daily WTI and Brent observations from the US Energy Information
+          Administration, spanning more than 35 years, against three questions: can classical
+          time-series models forecast prices and returns over a 63-day horizon, about one
+          business quarter; can GARCH models capture the volatility clustering plainly visible
+          in oil returns; and how many dollars per barrel did major geopolitical shocks
+          actually move the market.</p>
+        <div class="tags"><span>R</span><span>ARIMA</span><span>GARCH</span><span>EIA Data</span></div>
+        <p class="card-team">Team project.</p>
+      </article>
+
+      <article class="card">
+        <p class="card-date">Winter 2026</p>
+        <h3>Global Commodities Dashboard</h3>
+        <p class="card-sub">Automated ingestion &amp; reporting</p>
+        <p>A full-stack dashboard with automated data ingestion across commodities and
+          recurring reporting endpoints, turning a manual reporting cycle into a service that
+          refreshes itself.</p>
+        <div class="tags"><span>Python</span><span>FastAPI</span><span>Dashboards</span></div>
+        <div class="links">
+          <a href="https://github.com/jmakk123/Jared-s-Projects/tree/main/global-commodities-dashboard" target="_blank" rel="noopener">Source code</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <p class="card-date">Autumn 2025 &nbsp;/&nbsp; Big Data &amp; Cloud Computing</p>
+        <h3>Chicago Crime at Scale</h3>
+        <p class="card-sub">Distributed data processing</p>
+        <p>PySpark pipelines over the full Chicago crime record from 2001 to present, moving
+          from RDDs through DataFrames into distributed ML for classification, regression, and
+          clustering, with parallelized output generation across the joined dataset.</p>
+        <div class="tags"><span>PySpark</span><span>Distributed ML</span><span>Google Cloud</span></div>
+      </article>
+
+      <article class="card">
+        <p class="card-date">Autumn 2025 &nbsp;/&nbsp; Leadership &amp; Consulting</p>
+        <h3>Client Case Analytics</h3>
+        <p class="card-sub">Consulting engagements</p>
+        <p>Client-facing analytics engagements built as consulting deliverables: exploratory
+          analysis and revenue-change heatmaps for a quick-service restaurant chain, plus
+          e-commerce customer segmentation work translating behavioral data into a per-segment
+          revenue strategy presented to executive stakeholders.</p>
+        <div class="tags"><span>Segmentation</span><span>EDA</span><span>Executive Communication</span></div>
+        <p class="card-team">Client data held confidential.</p>
+      </article>
+
+    </div>
+
+    <p class="repo-note">
+      More coursework and earlier projects live in the
+      <a href="https://github.com/jmakk123/Jared-s-Projects" target="_blank" rel="noopener">project directory on GitHub</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ============ EDUCATION ============ -->
+<section id="education" class="section alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2><span class="num">04</span> Education</h2>
+      <p>University of Chicago, and the reason the Arabic sits next to the statistics.</p>
+    </div>
+
+    <div class="edu-grid">
+      <div class="edu">
+        <p class="edu-date">Expected Dec 2026</p>
+        <h3>MS, Applied Data Science</h3>
+        <p class="edu-gpa">GPA 4.0</p>
+        <p class="edu-course">Machine Learning I &amp; II &middot; Bayesian ML with GenAI
+          Applications &middot; Advanced Computer Vision &middot; Big Data &amp; Cloud
+          Computing &middot; Time Series Analysis &amp; Forecasting &middot; Statistics for
+          Data Science &middot; Leadership &amp; Consulting in Data Science</p>
+      </div>
+      <div class="edu">
+        <p class="edu-date">Jun 2025</p>
+        <h3>BS, Data Science<br><span>BA, Middle Eastern Studies</span></h3>
+        <p class="edu-gpa">Global Honors</p>
+        <p class="edu-course">Data science paired with Near Eastern Languages and
+          Civilizations, concentrating in Arabic.</p>
+      </div>
+    </div>
+
+    <div class="abroad">
+      <h3 class="abroad-h">Abroad &amp; Arabic</h3>
+      <p class="abroad-lede">
+        I want to spend my career building technology that helps people internationally, and
+        that ambition is why I studied Arabic alongside data science rather than after it.
+        Three times abroad, each one grant-funded:
+      </p>
+
+      <ol class="trips">
+        <li>
+          <span class="trip-when">Summer 2023</span>
+          <div class="trip-body">
+            <h4>Cairo, Egypt</h4>
+            <p class="trip-grant">Foreign Language Acquisition Grant</p>
+            <p>Studied Egyptian Colloquial Arabic at the International House of Cairo, moving
+              from the formal Arabic I had learned at UChicago into the dialect people actually
+              speak. By the end I could hold full conversations in it, which I used in
+              Alexandria to meet my extended family for the first time.</p>
+            <p class="trip-link">
+              <a href="https://study-abroad.uchicago.edu/student-voices/sitg-dispatch-cairo" target="_blank" rel="noopener">Read the dispatch from Cairo &rarr;</a>
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="trip-when">Winter 2025</span>
+          <div class="trip-body">
+            <h4>Marrakech, Morocco</h4>
+            <p>Continued study in a Maghrebi context, a different Arabic-speaking region with
+              its own dialect and its own relationship to the language.</p>
+          </div>
+        </li>
+        <li>
+          <span class="trip-when">Summer 2025</span>
+          <div class="trip-body">
+            <h4>Alexandria, Egypt</h4>
+            <p class="trip-grant">Elizabeth Schiller Friedman Foreign Language Acquisition Grant</p>
+            <p>Returned to Egypt, this time to Alexandria, where my family is from, for a
+              third round of immersive Arabic study.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SKILLS ============ -->
+<section class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2><span class="num">05</span> Toolkit</h2>
+      <p>What I reach for.</p>
+    </div>
+    <div class="skills">
+      <div class="skill-col">
+        <h3>Languages &amp; Backend</h3>
+        <p>Python &middot; SQL &middot; R &middot; TypeScript / JavaScript &middot; FastAPI
+          &middot; Flask &middot; Fastify &middot; Next.js &middot; React &middot; REST APIs
+          &middot; Docker &middot; PHP &middot; Git &middot; Unix</p>
+      </div>
+      <div class="skill-col">
+        <h3>AI &amp; LLMs</h3>
+        <p>LLM APIs (Claude, Azure OpenAI, Gemini) &middot; MCP &middot; RAG architectures
+          &middot; LangChain &middot; Agentic AI (Claude Code, Cowork, Codex) &middot; NLP
+          &middot; Prompt engineering &middot; Model evaluation</p>
+      </div>
+      <div class="skill-col">
+        <h3>Search &amp; Data Systems</h3>
+        <p>pgvector / HNSW vector search &middot; ChromaDB &middot; Recommendation &amp;
+          ranking models &middot; ETL pipelines &middot; Data validation &middot; Statistical
+          modeling &middot; A/B testing</p>
+      </div>
+      <div class="skill-col">
+        <h3>ML &amp; Cloud</h3>
+        <p>PyTorch &middot; TensorFlow &middot; scikit-learn &middot; pandas &middot; NumPy
+          &middot; AWS &middot; Google Cloud &middot; BigQuery &middot; Spark &middot;
+          Streamlit &middot; PowerBI &middot; Tableau</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section id="contact" class="contact">
+  <div class="wrap">
+    <h2>Let's build something that reaches people.</h2>
+    <p>Especially interested in work where AI has to function in the real world, across
+      languages, institutions, and borders. Always open to a conversation.</p>
+    <div class="cta">
+      <a class="btn primary" href="mailto:jaredmaksoud@gmail.com">jaredmaksoud@gmail.com</a>
+      <a class="btn" href="https://www.linkedin.com/in/jared-maksoud-183551255/" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="btn" href="https://github.com/jmakk123" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+  <footer>
+    <p>&copy; <span id="yr">2026</span> Jared Maksoud</p>
+  </footer>
+</section>
+
+</main>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // Shrink nav on scroll
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 40);
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  // Reveal on enter. Guarded so content can never stay invisible: anything at or
+  // above the fold reveals immediately, and a failsafe reveals everything if the
+  // observer never fires for an element (fast scrolling, anchor jumps, bfcache).
+  const targets = [...document.querySelectorAll(
+    '.tl-item, .card, .feature, .edu, .skill-col, .sec-head, .now, .trips > li'
+  )];
+
+  const reveal = el => el.classList.add('in');
+  const revealIfAboveFold = () => targets.forEach(el => {
+    if (el.getBoundingClientRect().top < window.innerHeight * 0.95) reveal(el);
+  });
+
+  if (!window.IntersectionObserver) {
+    targets.forEach(reveal);
+  } else {
+    targets.forEach(el => el.classList.add('rise'));
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { reveal(e.target); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.04 });
+    targets.forEach(el => io.observe(el));
+
+    requestAnimationFrame(revealIfAboveFold);
+    window.addEventListener('load', revealIfAboveFold);
+    window.addEventListener('hashchange', () => setTimeout(revealIfAboveFold, 60));
+    setTimeout(() => targets.forEach(reveal), 2600);   // failsafe
+  }
+</script>
+
+</body>
+</html>
