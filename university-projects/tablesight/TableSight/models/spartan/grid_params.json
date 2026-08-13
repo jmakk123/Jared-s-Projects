@@ -1,0 +1,8 @@
+{
+  "global": {
+    "ocr_min_conf": 0.3,
+    "row_tol_frac": 0.8,
+    "header_max_rows": 3,
+    "do_colspan_merge": true
+  }
+}

@@ -1,0 +1,22 @@
+# --- Data Engineering & EDA  ---
+pandas
+numpy
+beautifulsoup4
+lxml
+opencv-python
+jupyterlab
+matplotlib
+
+# --- VLM Training & Inference  ---
+torch
+torchvision
+transformers
+peft
+accelerate
+datasets
+Pillow
+
+# --- Backend & UI  ---
+fastapi
+uvicorn
+streamlit

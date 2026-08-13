@@ -1,0 +1,18 @@
+# Datasets and weights are not committed — see each project README for links
+*.csv
+!**/models/spartan/benchmark.csv
+*.xls
+*.xlsx
+*.parquet
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+data/
+outputs/
+output/
+.env
+.venv/
+venv/
+__pycache__/
+.DS_Store

@@ -1,0 +1,1105 @@
+---
+title: "Forecasting and Volatility Modeling of Crude Oil Prices"
+subtitle: "ADSP 31006 - Time Series Analysis and Forecasting | Final Project"
+author: "Daniel Mendoza, Jared Maksoud, Nicholas Dhaliwal"
+date: "March 9th, 2026"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    theme: flatly
+    highlight: tango
+---
+
+**Course:** Time Series Analysis and Forecasting
+**Instructor:** Prof. Arnab Bose, Ph.D.
+
+---
+
+# Project Overview
+
+This project analyzes daily WTI (West Texas Intermediate, Cushing Oklahoma) and Brent
+(North Sea) crude oil spot prices from the U.S. Energy Information Administration (EIA).
+The dataset covers 1987 through early 2026, giving us roughly 9,700 trading-day
+observations per series.
+
+We have three objectives. First, forecast WTI price levels and log returns over a
+63-trading-day horizon. Second, model time-varying conditional variance using ARCH/GARCH
+methods. Third, measure the price impact of three geopolitical shocks using intervention
+analysis.
+
+**Contributions:**
+
+- Daniel Mendoza: Section 3 (EDA)
+- Jared Maksoud: Section 5 (Intervention Analysis)
+- Nicholas Dhaliwal: Sections 4, 6, 7 (Feature Engineering, Forecasting Models, Comparison)
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo      = TRUE,
+  message   = FALSE,
+  warning   = FALSE,
+  fig.align = "center",
+  fig.width  = 9,
+  fig.height = 5,
+  fig.retina = 2
+)
+```
+
+# Libraries
+
+```{r libraries}
+# Data wrangling and visualization
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(gridExtra)
+library(knitr)
+library(zoo)
+
+# Univariate time series
+library(forecast)   # auto.arima, ets, Arima, accuracy, checkresiduals
+library(tseries)    # adf.test, kpss.test
+library(urca)       # ca.po (Phillips-Ouliaris cointegration test)
+
+# ARCH/GARCH
+library(rugarch)    # ugarchspec, ugarchfit, ugarchforecast
+library(FinTS)      # ArchTest (ARCH-LM test)
+
+# Multivariate time series
+library(vars)       # VAR, VARselect, causality, irf, predict
+
+# rugarch and vars both pull in MASS as a dependency, which masks
+# dplyr::select, dplyr::filter, and dplyr::lag. Re-assert dplyr versions
+# here so downstream pipelines work correctly.
+select <- dplyr::select
+filter <- dplyr::filter
+lag    <- dplyr::lag
+```
+
+---
+
+# Data Loading and Cleaning
+
+The EIA file is an Excel workbook with a metadata header above the actual data. The date
+column mixes two formats: numeric Excel serial integers and ISO character strings. The
+routine below handles both and locates the header row dynamically rather than hard-coding
+a row number, which makes it robust to minor file layout changes.
+
+```{r load-data}
+x <- read_excel("PET_PRI_SPT_S1_D.xls", sheet = "Data 1", col_names = FALSE)
+
+# Locate the header row dynamically
+i   <- which(x[[1]] == "Date")[1]
+dat <- x[(i + 1):nrow(x), 1:3]
+names(dat) <- c("Date", "USCrudePrice", "EuroCrudePrice")
+
+# Handle mixed date formats
+dnum     <- suppressWarnings(as.numeric(dat$Date))
+dat$Date <- ifelse(
+  !is.na(dnum) & dnum > 20000,
+  as.character(as.Date(dnum, origin = "1899-12-30")),
+  as.character(dat$Date)
+)
+dat$Date <- as.Date(dat$Date, format = "%Y-%m-%d")
+bad      <- is.na(dat$Date)
+dat$Date[bad] <- as.Date(as.character(dat$Date[bad]), format = "%b %d, %Y")
+
+# Coerce prices, drop incomplete rows, sort chronologically
+oil <- dat |>
+  mutate(
+    USCrudePrice   = suppressWarnings(as.numeric(USCrudePrice)),
+    EuroCrudePrice = suppressWarnings(as.numeric(EuroCrudePrice))
+  ) |>
+  filter(!is.na(Date), !is.na(USCrudePrice), !is.na(EuroCrudePrice)) |>
+  arrange(Date)
+
+cat("Date range  :", as.character(range(oil$Date)), "\n")
+cat("Observations:", nrow(oil), "\n")
+```
+
+---
+
+# Exploratory Data Analysis
+
+*Section authored by Daniel Mendoza.*
+
+We examine distributional properties, temporal dynamics, stationarity, autocorrelation
+structure, and the long-run relationship between WTI and Brent.
+
+## Price Series
+
+```{r eda-price-plot}
+ggplot(oil, aes(x = Date)) +
+  geom_line(aes(y = USCrudePrice,   color = "WTI"),   linewidth = 0.5) +
+  geom_line(aes(y = EuroCrudePrice, color = "Brent"), linewidth = 0.5) +
+  scale_color_manual(values = c("WTI" = "#2c3e50", "Brent" = "#16a085")) +
+  labs(title = "Crude Oil Daily Spot Prices: WTI and Brent",
+       x = "Date", y = "Price (USD/bbl)", color = "Series") +
+  theme_minimal(base_size = 12)
+```
+
+Both series trend together and show large dislocations around a few key events: the 2008
+financial crisis, the 2014-16 OPEC supply glut, the 2020 COVID crash, and the 2022 Ukraine
+invasion. These breaks motivate the intervention analysis in Section 5.
+
+## Price Distributions
+
+```{r eda-histograms, fig.width=10, fig.height=4}
+p1 <- ggplot(oil, aes(x = USCrudePrice)) +
+  geom_histogram(bins = 50, fill = "#2c3e50", color = "white", alpha = 0.85) +
+  labs(title = "WTI Price Distribution", x = "Price (USD/bbl)", y = "Count") +
+  theme_minimal()
+
+p2 <- ggplot(oil, aes(x = EuroCrudePrice)) +
+  geom_histogram(bins = 50, fill = "#16a085", color = "white", alpha = 0.85) +
+  labs(title = "Brent Price Distribution", x = "Price (USD/bbl)", y = "Count") +
+  theme_minimal()
+
+grid.arrange(p1, p2, ncol = 2)
+```
+
+Both distributions are right-skewed with long upper tails. Variance also increases with
+the price level. Both of these properties motivate a log transformation before modeling.
+
+## Log Transformation
+
+```{r eda-log-transform}
+oil <- oil |>
+  mutate(
+    logWTI   = log(USCrudePrice),
+    logBrent = log(EuroCrudePrice)
+  )
+
+p3 <- ggplot(oil, aes(Date, logWTI)) +
+  geom_line(color = "#2c3e50", linewidth = 0.5) +
+  labs(title = "Log WTI Price", x = "Date", y = "log(Price)") +
+  theme_minimal()
+
+p4 <- ggplot(oil, aes(Date, logBrent)) +
+  geom_line(color = "#16a085", linewidth = 0.5) +
+  labs(title = "Log Brent Price", x = "Date", y = "log(Price)") +
+  theme_minimal()
+
+grid.arrange(p3, p4, ncol = 2)
+```
+
+The log transformation stabilizes variance across the sample and compresses the upper
+tail. First differences of log prices give log returns, which are interpretable as
+approximate percentage changes.
+
+## Log Returns
+
+```{r eda-log-returns}
+oil <- oil |>
+  arrange(Date) |>
+  mutate(
+    WTI_Return   = c(NA, diff(logWTI)),
+    Brent_Return = c(NA, diff(logBrent))
+  )
+
+p5 <- ggplot(oil |> filter(!is.na(WTI_Return)), aes(Date, WTI_Return)) +
+  geom_line(color = "#2c3e50", linewidth = 0.35) +
+  labs(title = "WTI Log Returns", x = "Date", y = "Log Return") +
+  theme_minimal()
+
+p6 <- ggplot(oil |> filter(!is.na(Brent_Return)), aes(Date, Brent_Return)) +
+  geom_line(color = "#16a085", linewidth = 0.35) +
+  labs(title = "Brent Log Returns", x = "Date", y = "Log Return") +
+  theme_minimal()
+
+grid.arrange(p5, p6, ncol = 2)
+```
+
+Returns fluctuate around a stable mean near zero, consistent with a stationary series.
+But the variance is clearly not constant over time.
+
+## Volatility Clustering
+
+```{r eda-vol-clustering, fig.width=10, fig.height=4}
+p7 <- ggplot(oil |> filter(!is.na(WTI_Return)), aes(Date, abs(WTI_Return))) +
+  geom_line(color = "purple", linewidth = 0.35) +
+  labs(title = "WTI Absolute Returns", x = "Date", y = "|Log Return|") +
+  theme_minimal()
+
+p8 <- ggplot(oil |> filter(!is.na(Brent_Return)), aes(Date, abs(Brent_Return))) +
+  geom_line(color = "purple", linewidth = 0.35) +
+  labs(title = "Brent Absolute Returns", x = "Date", y = "|Log Return|") +
+  theme_minimal()
+
+grid.arrange(p7, p8, ncol = 2)
+```
+
+Large absolute returns cluster together and calm periods cluster together. This is the
+signature of ARCH effects that we formally test before fitting GARCH.
+
+## ACF and PACF of Returns
+
+```{r eda-acf-pacf, fig.width=11, fig.height=6}
+oil_clean <- oil |> filter(!is.na(WTI_Return), !is.na(Brent_Return))
+
+par(mfrow = c(2, 2))
+acf(oil_clean$WTI_Return,    lag.max = 40, main = "ACF - WTI Returns")
+pacf(oil_clean$WTI_Return,   lag.max = 40, main = "PACF - WTI Returns")
+acf(oil_clean$Brent_Return,  lag.max = 40, main = "ACF - Brent Returns")
+pacf(oil_clean$Brent_Return, lag.max = 40, main = "PACF - Brent Returns")
+par(mfrow = c(1, 1))
+```
+
+Most autocorrelations fall inside the 95% bands, consistent with near-white-noise behavior
+in the conditional mean. A few marginally significant early lags suggest a low-order ARMA
+may improve fit, which we let AICc resolve.
+
+## Stationarity Tests
+
+We use ADF and KPSS together because their null hypotheses are complementary. ADF tests
+H0: unit root; KPSS tests H0: level stationarity. Agreement between the two gives
+stronger evidence than either test alone.
+
+```{r eda-stationarity}
+adf_wti_lvl   <- adf.test(na.omit(oil$USCrudePrice))
+adf_brent_lvl <- adf.test(na.omit(oil$EuroCrudePrice))
+adf_wti_ret   <- adf.test(na.omit(oil$WTI_Return))
+adf_brent_ret <- adf.test(na.omit(oil$Brent_Return))
+
+kpss_wti_lvl   <- kpss.test(na.omit(oil$USCrudePrice))
+kpss_brent_lvl <- kpss.test(na.omit(oil$EuroCrudePrice))
+kpss_wti_ret   <- kpss.test(na.omit(oil$WTI_Return))
+kpss_brent_ret <- kpss.test(na.omit(oil$Brent_Return))
+
+stationarity_tbl <- data.frame(
+  Series    = c("WTI Levels", "Brent Levels", "WTI Returns", "Brent Returns"),
+  ADF_p     = round(c(adf_wti_lvl$p.value, adf_brent_lvl$p.value,
+                      adf_wti_ret$p.value, adf_brent_ret$p.value), 4),
+  ADF_conc  = c("Non-stationary", "Non-stationary", "Stationary", "Stationary"),
+  KPSS_p    = round(c(kpss_wti_lvl$p.value, kpss_brent_lvl$p.value,
+                       kpss_wti_ret$p.value, kpss_brent_ret$p.value), 4),
+  KPSS_conc = c("Non-stationary", "Non-stationary", "Stationary", "Stationary")
+)
+
+kable(stationarity_tbl,
+      col.names = c("Series", "ADF p-val", "ADF Result", "KPSS p-val", "KPSS Result"),
+      caption   = "Table 1: Stationarity Test Results")
+```
+
+Both tests agree. Price levels are I(1) and log returns are I(0). This sets d = 0 for
+all return-based models and d = 1 for any level-based model.
+
+## Correlation and Cointegration
+
+```{r eda-correlation}
+r_price <- cor(oil$USCrudePrice, oil$EuroCrudePrice, use = "complete.obs")
+r_ret   <- cor(oil$WTI_Return,   oil$Brent_Return,   use = "complete.obs")
+cat("Correlation (price levels):", round(r_price, 4), "\n")
+cat("Correlation (log returns) :", round(r_ret,   4), "\n")
+
+ggplot(oil, aes(USCrudePrice, EuroCrudePrice)) +
+  geom_point(alpha = 0.12, color = "#2c3e50", size = 0.7) +
+  geom_smooth(method = "lm", color = "#16a085", se = FALSE, linewidth = 1) +
+  labs(title = paste0("WTI vs. Brent (r = ", round(r_price, 3), ")"),
+       x = "WTI Price (USD/bbl)", y = "Brent Price (USD/bbl)") +
+  theme_minimal()
+```
+
+```{r eda-cointegration}
+# Phillips-Ouliaris test. H0: no cointegration.
+coint_test <- ca.po(
+  cbind(oil$USCrudePrice, oil$EuroCrudePrice),
+  demean = "constant"
+)
+summary(coint_test)
+```
+
+```{r eda-spread}
+oil <- oil |> mutate(spread = USCrudePrice - EuroCrudePrice)
+
+ggplot(oil, aes(Date, spread)) +
+  geom_line(color = "darkgreen", linewidth = 0.5) +
+  geom_hline(yintercept = mean(oil$spread, na.rm = TRUE),
+             linetype = "dashed", color = "gray50") +
+  labs(title = "WTI-Brent Spot Price Spread",
+       x = "Date", y = "Spread (USD/bbl)") +
+  theme_minimal()
+
+cat("Mean spread:", round(mean(oil$spread, na.rm = TRUE), 2), "USD/bbl\n")
+cat("SD spread  :", round(sd(oil$spread,   na.rm = TRUE), 2), "USD/bbl\n")
+```
+
+The Phillips-Ouliaris test rejects no cointegration. WTI and Brent share a long-run
+equilibrium even though each is individually I(1). The spread is therefore I(0) and
+mean-reverting. This supports two modeling choices: the spread is a usable stationary
+feature, and a VAR on the joint return system is appropriate.
+
+**EDA Summary:**
+
+| Finding | Modeling Implication |
+|---------|---------------------|
+| Prices I(1), returns I(0) | d = 0 for return models, d = 1 for level models |
+| Volatility clustering in abs. returns | ARCH effects warrant a GARCH model |
+| Returns near white noise in the mean | Low-order ARMA likely sufficient |
+| Correlation r ~0.99, cointegrated | VAR on joint system appropriate |
+
+---
+
+# Feature Engineering
+
+*Group contribution, motivated by EDA findings.*
+
+Each feature below was built for a specific reason tied to the EDA. The comments explain
+the connection to course material.
+
+```{r feature-engineering}
+oil <- oil |>
+  arrange(Date) |>
+  mutate(
+
+    # Log returns: first difference of log prices.
+    # Converts I(1) prices to I(0) returns (differencing from class).
+    WTI_Return   = c(NA, diff(logWTI)),
+    Brent_Return = c(NA, diff(logBrent)),
+
+    # WTI-Brent spread.
+    # Cointegration in Section 3 implies this linear combination is I(0),
+    # so the spread is stationary and mean-reverting. It could serve as
+    # an xreg in a dynamic regression if we extended the ARIMA model.
+    spread = USCrudePrice - EuroCrudePrice,
+
+    # 10-day rolling realized volatility.
+    # A simple non-parametric variance proxy. We use it to determine
+    # whether each geopolitical shock should be modeled as a pulse or
+    # step (Section 5). A 10-day window is roughly two trading weeks.
+    rolling_vol_10 = rollapply(
+      WTI_Return, width = 10, FUN = sd, fill = NA, align = "right"
+    ),
+
+    # Geopolitical shock dummies, following the intervention analysis
+    # framework from class (pulse vs. step).
+    # Pulse P_t: 1 during shock window, 0 otherwise. COVID gets a pulse
+    #   because rolling vol resolved to baseline by ~July 2020.
+    # Step S_t: 1 from event date onward. Ukraine and Middle East get
+    #   steps because rolling vol stayed elevated with no reversion.
+    covid_pulse     = as.integer(
+      Date >= as.Date("2020-03-13") & Date <= as.Date("2020-07-01")
+    ),
+    ukraine_step    = as.integer(Date >= as.Date("2022-02-24")),
+    middleeast_step = as.integer(Date >= as.Date("2023-10-06")),
+
+    # Squared returns as a realized variance proxy.
+    # Used in the McLeod-Li test (Ljung-Box on r_t^2 to detect ARCH
+    # effects) and as the out-of-sample evaluation target for GARCH.
+    WTI_sq_return = WTI_Return^2
+  )
+
+feat_tbl <- data.frame(
+  Feature = c("WTI_Return", "Brent_Return", "spread",
+              "rolling_vol_10", "covid_pulse",
+              "ukraine_step", "middleeast_step", "WTI_sq_return"),
+  Type    = c("Continuous", "Continuous", "Continuous",
+              "Continuous", "Binary", "Binary", "Binary", "Continuous"),
+  Order   = c("I(0)", "I(0)", "I(0)", "I(0)",
+              "I(0)", "I(0)", "I(0)", "I(0)"),
+  Purpose = c(
+    "Stationarity via differencing (ARIMA, GARCH, VAR)",
+    "Stationarity via differencing (VAR)",
+    "I(0) spread from cointegrated pair",
+    "Rolling vol for pulse/step classification",
+    "Pulse dummy: COVID temporary shock",
+    "Step dummy: Ukraine permanent shift",
+    "Step dummy: Middle East permanent shift",
+    "Realized variance for McLeod-Li and GARCH eval"
+  )
+)
+
+kable(feat_tbl,
+      col.names = c("Feature", "Type", "Order", "Purpose"),
+      caption   = "Table 2: Engineered Features")
+```
+
+---
+
+# Train / Test Split
+
+The most recent 63 trading days (~3 calendar months) are held out as the test set. All
+four forecasting models are trained on data prior to this window and evaluated on it.
+This avoids any data leakage and gives a fair comparison across models.
+
+```{r train-test}
+h_test <- 63
+
+oil_ret   <- oil |> filter(!is.na(WTI_Return), !is.na(Brent_Return))
+n_ret     <- nrow(oil_ret)
+train_ret <- oil_ret[1:(n_ret - h_test), ]
+test_ret  <- oil_ret[(n_ret - h_test + 1):n_ret, ]
+
+n_lvl     <- nrow(oil)
+train_lvl <- oil[1:(n_lvl - h_test), ]
+test_lvl  <- oil[(n_lvl - h_test + 1):n_lvl, ]
+
+cat("Training obs:", nrow(train_ret), "\n")
+cat("Test obs    :", nrow(test_ret),  "\n")
+cat("Train range :", as.character(range(train_ret$Date)), "\n")
+cat("Test range  :", as.character(range(test_ret$Date)),  "\n")
+```
+
+---
+
+# Intervention Analysis
+
+*Section authored by Jared Maksoud.*
+
+Before building forecasting models we identify structural breaks caused by three
+geopolitical shocks: the COVID-19 crash (March 2020), the Russia-Ukraine invasion
+(February 2022), and the Middle East escalation (October 2023).
+
+From the class framework, an intervention can take two forms. A pulse (P_t) is a temporary
+disruption: the dummy equals 1 during the shock window and 0 elsewhere. A step (S_t) is
+a permanent level shift: the dummy equals 1 from the event date onward. We determine
+which form applies to each event empirically using rolling volatility plots, not by
+assumption.
+
+## Event Timeline
+
+```{r int-timeline}
+plot(oil$Date, oil$USCrudePrice,
+     type = "l", col = "black", lwd = 0.7,
+     xlab = "Date", ylab = "WTI Price (USD/bbl)",
+     main = "WTI Price with Geopolitical Event Dates")
+abline(v = as.Date("2020-03-13"), col = "blue",   lty = 2, lwd = 1.5)
+abline(v = as.Date("2022-02-24"), col = "red",    lty = 2, lwd = 1.5)
+abline(v = as.Date("2023-10-06"), col = "purple", lty = 2, lwd = 1.5)
+legend("topleft",
+       legend = c("COVID (Mar 2020)",
+                  "Ukraine (Feb 2022)",
+                  "Middle East (Oct 2023)"),
+       col = c("blue", "red", "purple"), lty = 2, bty = "n", cex = 0.85)
+```
+
+## Rolling Volatility Around Each Event
+
+```{r int-rolling-vol, fig.height=9}
+oil2 <- oil |> filter(!is.na(USCrudePrice), USCrudePrice > 0)
+
+covid_win <- oil2 |>
+  filter(Date >= as.Date("2020-01-01"), Date <= as.Date("2020-12-31")) |>
+  mutate(vol = rollapply(USCrudePrice, 10, sd, fill = NA, align = "right"))
+
+ukraine_win <- oil2 |>
+  filter(Date >= as.Date("2021-12-01"), Date <= as.Date("2022-12-01")) |>
+  mutate(vol = rollapply(USCrudePrice, 10, sd, fill = NA, align = "right"))
+
+me_win <- oil2 |>
+  filter(Date >= as.Date("2023-06-01"), Date <= as.Date("2024-06-01")) |>
+  mutate(vol = rollapply(USCrudePrice, 10, sd, fill = NA, align = "right"))
+
+par(mfrow = c(3, 1), mar = c(3, 4, 3, 1))
+
+plot(covid_win$Date, covid_win$vol, type = "l", col = "black",
+     xlab = "", ylab = "10-day rolling sd",
+     main = "COVID (2020): volatility resolved ~Jul 2020, treated as pulse")
+abline(v = as.Date("2020-03-11"), col = "blue", lty = 2, lwd = 1.5)
+abline(v = as.Date("2020-07-01"), col = "blue", lty = 3, lwd = 1.5)
+
+plot(ukraine_win$Date, ukraine_win$vol, type = "l", col = "black",
+     xlab = "", ylab = "10-day rolling sd",
+     main = "Ukraine (2022): volatility stayed elevated, treated as step")
+abline(v = as.Date("2022-02-24"), col = "red", lty = 2, lwd = 1.5)
+
+plot(me_win$Date, me_win$vol, type = "l", col = "black",
+     xlab = "Date", ylab = "10-day rolling sd",
+     main = "Middle East (2023-24): volatility did not revert, treated as step")
+abline(v = as.Date("2023-10-06"), col = "purple", lty = 2, lwd = 1.5)
+
+par(mfrow = c(1, 1))
+```
+
+COVID volatility resolved by approximately July 2020, consistent with a pulse. Ukraine
+and Middle East volatility did not revert within the observation window, consistent with
+permanent step shifts.
+
+## Intervention ARIMA
+
+We fit ARIMA with the three shock dummies as external regressors. This is the
+`auto.arima(y, xreg = X)` dynamic regression approach from class, extended with the
+intervention dummy encoding. The model is estimated on the full series because the goal
+here is to estimate the shock coefficients, not to produce out-of-sample forecasts.
+
+```{r int-arima-fit}
+y_int <- ts(oil2$USCrudePrice, frequency = 252)
+
+covid_d   <- as.integer(oil2$Date >= as.Date("2020-03-13") &
+                        oil2$Date <= as.Date("2020-07-01"))
+ukraine_d <- as.integer(oil2$Date >= as.Date("2022-02-24"))
+me_d      <- as.integer(oil2$Date >= as.Date("2023-10-06"))
+
+X_int <- cbind(covid        = covid_d,
+               ukraine_step = ukraine_d,
+               middleeast   = me_d)
+
+cat("Observations per dummy:\n")
+print(colSums(X_int))
+
+fit_int <- auto.arima(
+  y_int,
+  xreg          = X_int,
+  seasonal      = FALSE,
+  stepwise      = FALSE,
+  approximation = FALSE
+)
+
+summary(fit_int)
+checkresiduals(fit_int)
+```
+
+```{r int-coefs}
+beta_int <- coef(fit_int)[c("covid", "ukraine_step", "middleeast")]
+
+cat("\nIntervention Coefficient Estimates:\n")
+cat("  COVID pulse effect      :", round(beta_int["covid"],        2),
+    "USD/bbl (Mar 13 - Jul 1, 2020)\n")
+cat("  Ukraine step effect     :", round(beta_int["ukraine_step"], 2),
+    "USD/bbl (permanent from Feb 24, 2022)\n")
+cat("  Middle East step effect :", round(beta_int["middleeast"],   2),
+    "USD/bbl (permanent from Oct 6, 2023)\n")
+
+int_covid_coef <- round(beta_int["covid"],        2)
+int_ukr_coef   <- round(beta_int["ukraine_step"], 2)
+int_me_coef    <- round(beta_int["middleeast"],   2)
+```
+
+## Counterfactual: Actual vs. Fitted vs. No Interventions
+
+```{r int-counterfactual}
+yhat_int   <- as.numeric(fitted(fit_int))
+shock_part <- as.numeric(X_int %*% beta_int)
+yhat_cf    <- yhat_int - shock_part
+
+plot(oil2$Date, as.numeric(y_int),
+     type = "l", col = "black", lwd = 0.7,
+     xlab = "Date", ylab = "WTI (USD/bbl)",
+     main = "WTI: Actual vs. Fitted vs. No-Intervention Counterfactual")
+lines(oil2$Date, yhat_int, col = "blue",      lwd = 1.8)
+lines(oil2$Date, yhat_cf,  col = "darkgreen", lwd = 1.8, lty = 2)
+abline(v = as.Date("2020-03-13"), col = "gray50", lty = 3)
+abline(v = as.Date("2022-02-24"), col = "gray50", lty = 3)
+abline(v = as.Date("2023-10-06"), col = "gray50", lty = 3)
+legend("topleft",
+       legend = c("Actual", "Fitted (with interventions)",
+                  "Counterfactual (no interventions)"),
+       col = c("black", "blue", "darkgreen"),
+       lty = c(1, 1, 2), bty = "n", cex = 0.85)
+```
+
+```{r int-contribution}
+plot(oil2$Date, shock_part,
+     type = "l", col = "darkred", lwd = 1,
+     xlab = "Date", ylab = "Intervention contribution (USD/bbl)",
+     main = "Total Estimated Intervention Effect Over Time")
+abline(h = 0, lty = 2, col = "gray60")
+abline(v = as.Date("2020-03-13"), col = "blue",   lty = 3)
+abline(v = as.Date("2022-02-24"), col = "red",    lty = 3)
+abline(v = as.Date("2023-10-06"), col = "purple", lty = 3)
+```
+
+---
+
+# Forecasting Models
+
+*Section authored by Nicholas Dhaliwal.*
+
+Four models are developed, each motivated by a specific EDA finding. Together with the
+intervention ARIMA above, the project covers five distinct models.
+
+| Model | EDA Finding | Class Coverage |
+|-------|------------|----------------|
+| ARIMA | Returns I(0), near-WN ACF/PACF | Week 3 |
+| ETS | Prices trend, no fixed seasonality | Week 2 |
+| ARMA-GARCH | Volatility clustering, ARCH confirmed | Week 7 |
+| VAR | r ~0.99, cointegration confirmed | Week 7 |
+
+## ARIMA on WTI Log Returns
+
+Returns are I(0) so we fit ARIMA(p, 0, q). The Box-Jenkins procedure from class guides
+identification: inspect ACF/PACF, run an exhaustive AICc search, then compare neighboring
+models to confirm the selection is stable. Setting d = 0 prevents auto.arima from
+differencing a series that is already stationary.
+
+### ACF and PACF
+
+```{r arima-acf}
+par(mfrow = c(1, 2))
+acf(train_ret$WTI_Return,  lag.max = 40, main = "ACF - WTI Returns (train)")
+pacf(train_ret$WTI_Return, lag.max = 40, main = "PACF - WTI Returns (train)")
+par(mfrow = c(1, 1))
+```
+
+### Model Selection
+
+```{r arima-fit}
+wti_ret_ts <- ts(train_ret$WTI_Return, frequency = 252)
+
+arima_fit <- auto.arima(
+  wti_ret_ts,
+  d             = 0,        # returns are I(0), do not difference
+  max.p         = 5,
+  max.q         = 5,
+  stepwise      = FALSE,    # exhaustive search
+  approximation = FALSE,    # exact likelihood
+  ic            = "aicc"    # AICc penalizes overfitting more than AIC
+)
+
+summary(arima_fit)
+
+p_ar <- arima_fit$arma[1]
+q_ma <- arima_fit$arma[2]
+cat("\nauto.arima selected: ARIMA(", p_ar, ",0,", q_ma, ")\n", sep = "")
+cat("AICc              :", round(arima_fit$aicc,   3), "\n")
+cat("Log-likelihood    :", round(arima_fit$loglik, 3), "\n")
+```
+
+### Neighboring Model Comparison
+
+```{r arima-neighbors}
+cands <- list(
+  selected = arima_fit,
+  p_up     = Arima(wti_ret_ts, order = c(p_ar + 1, 0, q_ma)),
+  q_up     = Arima(wti_ret_ts, order = c(p_ar,     0, q_ma + 1))
+)
+if (p_ar > 0) cands$p_down <- Arima(wti_ret_ts, order = c(p_ar - 1, 0, q_ma))
+if (q_ma > 0) cands$q_down <- Arima(wti_ret_ts, order = c(p_ar,     0, q_ma - 1))
+
+nbr_tbl <- data.frame(
+  Model = names(cands),
+  AICc  = round(sapply(cands, function(m) m$aicc), 3)
+) |> arrange(AICc)
+
+kable(nbr_tbl, caption = "Table 3: ARIMA Neighboring Model AICc Comparison")
+```
+
+### Diagnostics
+
+```{r arima-diagnostics}
+checkresiduals(arima_fit)
+```
+
+```{r arima-ljungbox}
+lb_lags <- c(5, 10, 20)
+lb_tbl  <- data.frame(Lag = lb_lags, Q_stat = NA_real_, p_value = NA_real_)
+for (k in seq_along(lb_lags)) {
+  lb <- Box.test(residuals(arima_fit), lag = lb_lags[k],
+                 type = "Ljung-Box", fitdf = p_ar + q_ma)
+  lb_tbl$Q_stat[k]  <- round(lb$statistic, 3)
+  lb_tbl$p_value[k] <- round(lb$p.value,   4)
+}
+kable(lb_tbl, caption = "Table 4: Ljung-Box Test on ARIMA Residuals")
+```
+
+### Forecast and Accuracy
+
+```{r arima-forecast}
+arima_fcast <- forecast(arima_fit, h = h_test)
+
+autoplot(arima_fcast) +
+  labs(title = paste0("ARIMA(", p_ar, ",0,", q_ma, ") - WTI Return Forecast (",
+                      h_test, " days)"),
+       x = "Time (training days)", y = "Log Return") +
+  theme_minimal()
+```
+
+```{r arima-accuracy}
+arima_acc <- accuracy(arima_fcast, test_ret$WTI_Return)
+kable(round(arima_acc, 6), caption = "Table 5: ARIMA Accuracy")
+
+arima_rmse <- arima_acc["Test set", "RMSE"]
+arima_mae  <- arima_acc["Test set", "MAE"]
+arima_mase <- arima_acc["Test set", "MASE"]
+```
+
+The point forecast converges to zero quickly, which is expected for a near-random-walk
+return series. The value of ARIMA here is the calibrated prediction intervals and the
+pre-whitened residuals, which feed into the GARCH pre-test below.
+
+---
+
+## ETS on WTI Price Levels
+
+ETS models price levels directly without a stationarity transformation. The `ets()`
+function searches all error/trend/season combinations and picks the minimum-AICc
+specification, the same information criterion used for ARIMA. Given that oil prices trend
+persistently without obvious calendar seasonality, we expect a trend component and no
+seasonal component.
+
+```{r ets-fit}
+wti_lvl_ts <- ts(train_lvl$USCrudePrice, frequency = 252)
+
+ets_fit <- ets(wti_lvl_ts, restrict = FALSE)
+
+summary(ets_fit)
+cat("\nSelected:", ets_fit$method, "\n")
+cat("AICc    :", round(ets_fit$aicc, 2), "\n")
+```
+
+### Diagnostics
+
+```{r ets-diagnostics}
+checkresiduals(ets_fit)
+```
+
+### Forecast and Accuracy
+
+```{r ets-forecast}
+ets_fcast <- forecast(ets_fit, h = h_test)
+
+autoplot(ets_fcast) +
+  labs(title = paste0("ETS(", ets_fit$method, ") - WTI Price Level Forecast (",
+                      h_test, " days)"),
+       x = "Time (training days)", y = "WTI Price (USD/bbl)") +
+  theme_minimal()
+```
+
+```{r ets-accuracy}
+ets_acc <- accuracy(ets_fcast, test_lvl$USCrudePrice)
+kable(round(ets_acc, 4), caption = "Table 6: ETS Accuracy")
+
+ets_rmse <- ets_acc["Test set", "RMSE"]
+ets_mae  <- ets_acc["Test set", "MAE"]
+ets_mase <- ets_acc["Test set", "MASE"]
+```
+
+---
+
+## ARMA-GARCH Volatility Model
+
+Two EDA findings motivate this model. First, absolute returns show clear volatility
+clustering. Second, ACF of squared returns shows significant autocorrelation. Standard
+ARIMA assumes homoscedastic errors and cannot address either. ARMA-GARCH decouples the
+problem: ARMA handles the conditional mean and GARCH(1,1) models the conditional variance.
+
+We use GARCH(1,1) because it is equivalent to an infinite-order ARCH model with only two
+variance parameters (alpha1 and beta1). Student-t innovations accommodate the heavy tails
+visible in the return histograms.
+
+### Pre-Test: ARCH Effects
+
+```{r garch-arch-tests}
+arima_resid <- residuals(arima_fit)
+
+# McLeod-Li: Ljung-Box on squared residuals
+ml_lags <- c(5, 10, 20)
+ml_tbl  <- data.frame(Lag = ml_lags, Q_squared = NA_real_, p_value = NA_real_)
+for (k in seq_along(ml_lags)) {
+  lb_sq <- Box.test(arima_resid^2, lag = ml_lags[k], type = "Ljung-Box")
+  ml_tbl$Q_squared[k] <- round(lb_sq$statistic, 3)
+  ml_tbl$p_value[k]   <- round(lb_sq$p.value,   6)
+}
+cat("McLeod-Li Test (Ljung-Box on squared residuals):\n")
+kable(ml_tbl, caption = "Table 7: McLeod-Li Test Results")
+
+# ARCH-LM test
+arch_lm <- ArchTest(arima_resid, lags = 10)
+cat("\nARCH-LM Test:\n")
+print(arch_lm)
+```
+
+Both tests reject no ARCH effects. GARCH modeling is warranted.
+
+### Model Fit
+
+```{r garch-fit}
+garch_spec <- ugarchspec(
+  variance.model     = list(model = "sGARCH", garchOrder = c(1, 1)),
+  mean.model         = list(armaOrder = c(p_ar, q_ma), include.mean = TRUE),
+  distribution.model = "std"   # Student-t for heavy tails
+)
+
+garch_fit <- ugarchfit(
+  spec   = garch_spec,
+  data   = train_ret$WTI_Return,
+  solver = "hybrid"
+)
+
+show(garch_fit)
+```
+
+```{r garch-persistence}
+alpha1      <- coef(garch_fit)["alpha1"]
+beta1       <- coef(garch_fit)["beta1"]
+shape_nu    <- coef(garch_fit)["shape"]
+persistence <- alpha1 + beta1
+half_life   <- log(0.5) / log(persistence)
+
+cat("\nGARCH(1,1) Key Parameters:\n")
+cat("  alpha1 (shock impact) :", round(alpha1,      5), "\n")
+cat("  beta1  (persistence)  :", round(beta1,       5), "\n")
+cat("  alpha1 + beta1        :", round(persistence, 5), "\n")
+cat("  half-life of vol shock:", round(half_life,   1), "trading days\n")
+cat("  Student-t dof (nu)    :", round(shape_nu,    2), "\n")
+
+garch_persistence <- round(persistence, 4)
+garch_halflife    <- round(half_life,   1)
+garch_alpha1      <- round(alpha1, 5)
+garch_beta1       <- round(beta1,  5)
+```
+
+Persistence (alpha1 + beta1) close to 1 means volatility shocks decay slowly. The
+half-life is the number of trading days it takes for a shock to decay by half.
+
+### Diagnostics
+
+```{r garch-diagnostics, fig.width=11, fig.height=6}
+std_resid <- residuals(garch_fit, standardize = TRUE)
+
+par(mfrow = c(2, 2))
+acf(std_resid,    lag.max = 30, main = "ACF - Standardized Residuals")
+acf(std_resid^2,  lag.max = 30, main = "ACF - Squared Std. Residuals")
+pacf(std_resid,   lag.max = 30, main = "PACF - Standardized Residuals")
+pacf(std_resid^2, lag.max = 30, main = "PACF - Squared Std. Residuals")
+par(mfrow = c(1, 1))
+```
+
+```{r garch-lb}
+lb_mean_p <- Box.test(std_resid,   lag = 10, type = "Ljung-Box")$p.value
+lb_var_p  <- Box.test(std_resid^2, lag = 10, type = "Ljung-Box")$p.value
+
+cat("LB on std. residuals (mean adequacy) : p =", round(lb_mean_p, 4), "\n")
+cat("LB on sq. std. residuals (var adequacy): p =", round(lb_var_p,  4), "\n")
+```
+
+### Conditional Volatility
+
+```{r garch-cond-vol}
+cond_vol_hist <- sigma(garch_fit)
+
+plot(train_ret$Date, cond_vol_hist,
+     type = "l", col = "darkred", lwd = 0.7,
+     xlab = "Date", ylab = "Conditional volatility (sigma_t)",
+     main = "GARCH(1,1) Estimated Conditional Volatility - Training Set")
+abline(v = as.Date("2008-09-15"), col = "orange", lty = 2)
+abline(v = as.Date("2020-03-13"), col = "blue",   lty = 2)
+abline(v = as.Date("2022-02-24"), col = "red",    lty = 2)
+abline(v = as.Date("2023-10-06"), col = "purple", lty = 2)
+legend("topright",
+       legend = c("sigma_t", "Lehman (2008)", "COVID (2020)",
+                  "Ukraine (2022)", "ME (2023)"),
+       col = c("darkred", "orange", "blue", "red", "purple"),
+       lty = c(1, 2, 2, 2, 2), bty = "n", cex = 0.8)
+```
+
+### Volatility Forecast
+
+```{r garch-forecast}
+garch_fcast  <- ugarchforecast(garch_fit, n.ahead = h_test)
+fcast_vol    <- as.numeric(sigma(garch_fcast))
+realized_var <- test_ret$WTI_sq_return
+
+fcast_dates_g <- seq(max(train_ret$Date) + 1, by = "day", length.out = h_test)
+
+plot(fcast_dates_g, fcast_vol,
+     type = "l", col = "darkred", lwd = 2,
+     xlab = "Date", ylab = "Forecast sigma_t",
+     main = paste0("GARCH(1,1) ", h_test, "-Day Volatility Forecast"))
+
+vol_rmse <- sqrt(mean((fcast_vol^2 - realized_var)^2, na.rm = TRUE))
+vol_mae  <-      mean( abs(fcast_vol^2 - realized_var),  na.rm = TRUE)
+
+cat("GARCH forecast accuracy (forecast sigma^2 vs. realized r^2):\n")
+cat("  RMSE:", round(vol_rmse, 8), "\n")
+cat("  MAE :", round(vol_mae,  8), "\n")
+```
+
+---
+
+## VAR on WTI and Brent Returns
+
+WTI and Brent have correlation ~0.99 and are cointegrated. Modeling WTI alone ignores
+information in Brent's lagged returns. VAR(p) models both series jointly and lets each
+help forecast the other. We then test Granger causality to check whether that information
+is statistically meaningful.
+
+Note: because prices are I(1) and cointegrated, a VECM would be more efficient by imposing
+the long-run equilibrium constraint. VAR on I(0) returns is valid but discards that
+channel. We flag VECM as a natural extension.
+
+### Stationarity Check
+
+```{r var-stationarity}
+cat("ADF on training returns:\n")
+cat("  WTI  : p =", round(adf.test(train_ret$WTI_Return)$p.value,   4), "\n")
+cat("  Brent: p =", round(adf.test(train_ret$Brent_Return)$p.value, 4), "\n")
+```
+
+### Lag Order Selection
+
+```{r var-lag}
+ret_mat <- cbind(WTI   = train_ret$WTI_Return,
+                 Brent = train_ret$Brent_Return)
+
+var_sel <- VARselect(ret_mat, lag.max = 15, type = "const")
+cat("Lag order by criterion:\n")
+print(var_sel$selection)
+
+p_var <- var_sel$selection["AIC(n)"]
+cat("\nUsing AIC-selected lag p =", p_var, "\n")
+```
+
+### Model Estimation
+
+```{r var-fit}
+var_fit <- VAR(ret_mat, p = p_var, type = "const")
+summary(var_fit)
+```
+
+### Granger Causality
+
+```{r var-granger}
+gc_b2w <- causality(var_fit, cause = "Brent")
+gc_w2b <- causality(var_fit, cause = "WTI")
+
+cat("Granger Causality: Brent -> WTI\n")
+print(gc_b2w$Granger)
+cat("\nGranger Causality: WTI -> Brent\n")
+print(gc_w2b$Granger)
+
+gc_b2w_p <- round(gc_b2w$Granger$p.value, 4)
+gc_w2b_p <- round(gc_w2b$Granger$p.value, 4)
+
+cat("\nBrent -> WTI  : p =", gc_b2w_p,
+    ifelse(gc_b2w_p < 0.05, "-> Granger-causes WTI", "-> no G-causality"), "\n")
+cat("WTI -> Brent  : p =", gc_w2b_p,
+    ifelse(gc_w2b_p < 0.05, "-> Granger-causes Brent", "-> no G-causality"), "\n")
+```
+
+### Impulse Response Functions
+
+```{r var-irf, fig.width=11, fig.height=5}
+irf_b2w <- irf(var_fit, impulse = "Brent", response = "WTI",
+               n.ahead = 15, boot = TRUE, ci = 0.95)
+irf_w2b <- irf(var_fit, impulse = "WTI",   response = "Brent",
+               n.ahead = 15, boot = TRUE, ci = 0.95)
+
+par(mfrow = c(1, 2))
+plot(irf_b2w, main = "Brent shock -> WTI response (95% CI)")
+plot(irf_w2b, main = "WTI shock -> Brent response (95% CI)")
+par(mfrow = c(1, 1))
+```
+
+### Forecast and Accuracy
+
+```{r var-forecast}
+var_fcast  <- predict(var_fit, n.ahead = h_test)
+wti_var_pt <- var_fcast$fcst$WTI[, "fcst"]
+wti_var_lo <- var_fcast$fcst$WTI[, "lower"]
+wti_var_hi <- var_fcast$fcst$WTI[, "upper"]
+
+fcast_dates_v <- seq(max(train_ret$Date) + 1, by = "day", length.out = h_test)
+
+plot(fcast_dates_v, wti_var_pt,
+     type = "l", col = "steelblue", lwd = 2,
+     ylim = range(c(wti_var_lo, wti_var_hi)),
+     xlab = "Date", ylab = "WTI Log Return",
+     main = paste0("VAR(", p_var, ") - WTI Return Forecast (", h_test, " days)"))
+polygon(c(fcast_dates_v, rev(fcast_dates_v)),
+        c(wti_var_hi, rev(wti_var_lo)),
+        col = adjustcolor("steelblue", 0.15), border = NA)
+abline(h = 0, lty = 2, col = "gray60")
+```
+
+```{r var-accuracy}
+var_acc <- accuracy(wti_var_pt, test_ret$WTI_Return)
+kable(round(var_acc, 6), caption = "Table 8: VAR Accuracy - WTI Returns (Test Set)")
+
+var_rmse <- var_acc[1, "RMSE"]
+var_mae  <- var_acc[1, "MAE"]
+var_mase <- var_acc[1, "MASE"]
+```
+
+---
+
+# Model Comparison
+
+```{r comparison}
+comp_tbl <- data.frame(
+  Model  = c("ARIMA", "ETS", "ARMA-GARCH", "VAR", "Intervention ARIMA*"),
+  Target = c("WTI log returns", "WTI price (USD/bbl)",
+             "Conditional volatility", "WTI + Brent returns",
+             "WTI price with shock dummies"),
+  RMSE   = c(round(arima_rmse, 6), round(ets_rmse, 4),
+             round(vol_rmse,   8), round(var_rmse, 6), NA),
+  MAE    = c(round(arima_mae,  6), round(ets_mae,  4),
+             round(vol_mae,    8), round(var_mae,  6), NA),
+  MASE   = c(round(arima_mase, 4), round(ets_mase, 4),
+             NA,                   round(var_mase, 4), NA)
+)
+
+kable(comp_tbl,
+      col.names = c("Model", "Target", "RMSE", "MAE", "MASE"),
+      caption   = "Table 9: Model Comparison",
+      na        = "--")
+```
+
+*Intervention ARIMA is fitted on the full series for structural estimation. Out-of-sample
+accuracy is not applicable.*
+
+ARIMA and VAR both target WTI log returns and can be compared directly on RMSE and MAE.
+ETS targets price levels so its error metrics are on a different scale and are not
+directly comparable. GARCH targets conditional variance and is evaluated against realized
+squared returns.
+
+The recommended approach by use case: for **volatility or risk management**, ARMA-GARCH
+is the primary model since it is the only one that explicitly forecasts variance. For
+**return forecasting**, compare VAR vs. ARIMA directly. For **price level forecasting**,
+use ETS. For **shock attribution**, the intervention ARIMA coefficients quantify how much
+each geopolitical event shifted the WTI price level.
+
+---
+
+# Assumptions and Limitations
+
+1. **Trading-day gaps.** Weekends and holidays are structural absences, not missing data.
+   We use frequency = 252 throughout as the standard trading-day approximation.
+
+2. **GARCH distribution.** Student-t handles heavy tails but assumes a symmetric
+   distribution. A skewed-t could be tested as a robustness check.
+
+3. **VAR vs. VECM.** VAR on I(0) returns is valid but ignores the long-run
+   error-correction relationship confirmed by Phillips-Ouliaris. VECM would be more
+   efficient at longer horizons and is a natural next step.
+
+4. **Intervention dummy design.** Pulse and step classification is based on visual
+   inspection of rolling volatility, not a formal change-point test. The COVID end date
+   (July 1, 2020) involves some judgment.
+
+5. **Unmodeled breaks.** The intervention dummies only capture three known events. Other
+   structural breaks (e.g., the 2014-16 OPEC supply war) are not explicitly modeled and
+   will inflate variance estimates.
+
+---
+
+# Future Work
+
+```{r future-work}
+fw_tbl <- data.frame(
+  Extension   = c("VECM", "Regime-switching GARCH", "TimeGPT"),
+  Rationale   = c(
+    "Cointegration is confirmed; VECM imposes the long-run constraint and should improve multi-step accuracy over VAR",
+    "Model distinct calm and crisis volatility regimes that the intervention analysis identified empirically",
+    "Foundation model benchmark from class; compare zero-shot forecasts against ARIMA and VAR baselines"
+  ),
+  Connects_To = c(
+    "Cointegration (Section 3), VAR (Section 6)",
+    "Volatility clustering (Section 3), GARCH (Section 6)",
+    "Week 5 coverage of foundation models and TimeGPT"
+  )
+)
+
+kable(fw_tbl,
+      col.names = c("Extension", "Rationale", "Connects To"),
+      caption   = "Table 10: Future Work")
+```
+
+---
+
+*Contributions: Daniel Mendoza (Section 3), Jared Maksoud (Section 5), Nicholas Dhaliwal
+(Sections 4, 6, 7).*
