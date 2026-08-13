@@ -19,8 +19,8 @@
     <a class="mark" href="#top"><span>JM</span></a>
     <nav aria-label="Sections">
       <a href="#work">Work</a>
-      <a href="#field">Field Work</a>
       <a href="#projects">Projects</a>
+      <a href="#field">Field Work</a>
       <a href="#education">Education</a>
       <a href="#contact">Contact</a>
     </nav>
@@ -287,117 +287,11 @@
   </div>
 </section>
 
-<!-- ============ FIELD WORK / FEATURED ============ -->
-<section id="field" class="section alt">
-  <div class="wrap">
-    <div class="sec-head">
-      <h2><span class="num">02</span> Field Work</h2>
-      <p>The part I care most about: three engagements where the work left the notebook and
-        went to an organization that needed it. Each one has something public to show.</p>
-    </div>
-
-    <!-- BDC -->
-    <article class="feature" id="bdc">
-      <div class="feature-media">
-        <a href="https://www.youtube.com/watch?v=iEjx887nnGY" target="_blank" rel="noopener" class="media-link">
-          <img src="assets/bdc-video-thumb.jpg" alt="Video thumbnail: Building a Chatbot to Support Clean Energy for Buildings, UChicago DSI and Building Decarbonization Coalition">
-          <span class="play" aria-hidden="true">&#9654;</span>
-          <span class="media-cap">Watch: building the clean-energy chatbot</span>
-        </a>
-      </div>
-      <div class="feature-body">
-        <p class="feature-kicker">Autumn 2024 &nbsp;/&nbsp; UChicago Data Science Clinic</p>
-        <h3>An LLM chatbot for geothermal energy policy</h3>
-        <p>
-          Evaluating whether Thermal Energy Network pilot projects succeed meant reading across
-          scattered PDFs in a New York state government database. I built an AI agent pipeline
-          that made that corpus conversational: a web scraper pulling filings from the NY
-          Department of Public Service, NVIDIA RAG embeddings for retrieval, ChromaDB for
-          indexed vector storage, and a Llama Instruct model behind a LangChain CLI, answering
-          stakeholder questions with precise document references.
-        </p>
-        <div class="tags">
-          <span>LangChain</span><span>ChromaDB</span><span>NVIDIA RAG</span><span>Llama Instruct</span>
-        </div>
-        <div class="links">
-          <a href="https://github.com/jmakk123/Jared-s-Projects/tree/main/2024-autumn-building-decarbon" target="_blank" rel="noopener">Source code</a>
-          <a href="https://www.youtube.com/watch?v=iEjx887nnGY" target="_blank" rel="noopener">Demo video</a>
-          <a href="https://clinic.ds.uchicago.edu/projects/one-pagers/2025-winter/Building%20Decarbonization%20Coalition.pdf" target="_blank" rel="noopener">Project brief (PDF)</a>
-        </div>
-        <figure class="inline-fig">
-          <img src="assets/bdc-arch-pipeline.png" alt="Diagram of the retrieval-augmented generation pipeline: query augmentation, vector database retriever, reciprocal rank fusion with reranking, and response generation">
-          <figcaption>The retrieval pipeline: query augmentation, vector retrieval, reciprocal rank fusion, reranking, response generation.</figcaption>
-        </figure>
-      </div>
-    </article>
-
-    <!-- PAN -->
-    <article class="feature reverse" id="pan">
-      <div class="feature-media">
-        <a href="https://pesticideinfo.org/pesticide-maps/ca-pesticide-map" target="_blank" rel="noopener" class="media-link plain">
-          <img src="assets/pan-fig-map.png" alt="Map of California showing all public schools, schools within high pesticide risk areas, and high pesticide risk regions concentrated in the Central Valley">
-          <span class="media-cap">14.9% of CA schools sit within a mile of heavy pesticide use. Explore the public map.</span>
-        </a>
-      </div>
-      <div class="feature-body">
-        <p class="feature-kicker">Spring 2025 &nbsp;/&nbsp; UChicago Data Science Clinic</p>
-        <h3>Who actually breathes California's pesticides</h3>
-        <p>
-          California accounts for roughly 20% of national pesticide use, much of it classified
-          high-risk, but the public data is granular and unwieldy. Our team analyzed the
-          California Pesticide Use Report alongside US Census Bureau demographics and the
-          California State Geoportal to find who bears the exposure. Counties with the heaviest
-          high-risk pesticide use skewed toward Hispanic populations, residents without high
-          school degrees, and agricultural workers. School districts in the Central Valley saw
-          the most intense exposure, and <strong>14.9% of California public schools sit within a
-          mile of intense pesticide application areas</strong>. Use declined steadily from 2017
-          to 2022, but the exposure disparities did not.
-        </p>
-        <div class="tags">
-          <span>Python</span><span>Geospatial Analysis</span><span>Census Data</span><span>ETL</span>
-        </div>
-        <div class="links">
-          <a href="https://github.com/jmakk123/Jared-s-Projects/tree/main/2025-spring-pesticide-action-network" target="_blank" rel="noopener">Source code</a>
-          <a href="https://pesticideinfo.org/pesticide-maps/ca-pesticide-map" target="_blank" rel="noopener">Live tool</a>
-          <a href="https://clinic.ds.uchicago.edu/projects/one-pagers/2025-spring/Pesticide%20Action%20Network.pdf" target="_blank" rel="noopener">Project brief (PDF)</a>
-          <a href="https://datascience.uchicago.edu/news/new-data-tool-tracks-pesticides-impact-on-public-health-and-the-environment/" target="_blank" rel="noopener">UChicago DSI coverage</a>
-        </div>
-        <figure class="inline-fig">
-          <img src="assets/pan-fig-correlation.png" alt="Bar chart of correlations between groundwater contaminant pesticide intensity and county demographics: no high school degree 0.67, Hispanic 0.65, working in agriculture 0.41, non-Hispanic white negative 0.58">
-          <figcaption>County-level correlation between groundwater contaminant pesticide intensity and demographics.</figcaption>
-        </figure>
-      </div>
-    </article>
-
-    <!-- EPIC -->
-    <article class="feature compact" id="epic">
-      <div class="feature-body full">
-        <p class="feature-kicker">April 2024 &nbsp;/&nbsp; UChicago Energy Policy Institute</p>
-        <h3>Decarbonizing a global logistics firm</h3>
-        <p>
-          As part of Team Solar Express, I helped build a quantitative decarbonization strategy
-          for Kuehne and Nagel: hydrotreated vegetable oil and battery-electric trucks for road
-          transport, rooftop solar across warehouses to cover Scope 2 emissions, blue and green
-          methanol for maritime, and a ramp on sustainable aviation fuel. Total cost came to
-          $4.96&nbsp;billion over 16 years, financed by a 15.1% green premium against a
-          projected $16.87&nbsp;billion in free cash flow. We won the
-          <strong>Honorable Mention Quantitative Prize</strong>.
-        </p>
-        <div class="tags"><span>ML Forecasting</span><span>Financial Modeling</span><span>Climate Strategy</span></div>
-        <div class="links">
-          <a href="https://epic.uchicago.edu/news/2024-climate-case-competition-honorable-mention-quantitative-prize-team-solar-express/" target="_blank" rel="noopener">Competition write-up</a>
-        </div>
-      </div>
-    </article>
-
-  </div>
-</section>
-
 <!-- ============ PROJECTS ============ -->
-<section id="projects" class="section">
+<section id="projects" class="section alt">
   <div class="wrap">
     <div class="sec-head">
-      <h2><span class="num">03</span> Projects</h2>
+      <h2><span class="num">02</span> Projects</h2>
       <p>Where the methods get built and stress-tested. Everything here is from my
         master's, September 2025 onward.</p>
     </div>
@@ -523,6 +417,112 @@
       More coursework and earlier projects live in the
       <a href="https://github.com/jmakk123/Jared-s-Projects" target="_blank" rel="noopener">project directory on GitHub</a>.
     </p>
+  </div>
+</section>
+
+<!-- ============ FIELD WORK / FEATURED ============ -->
+<section id="field" class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2><span class="num">03</span> Field Work</h2>
+      <p>Earlier work, from my undergraduate years, where the code left the notebook and went
+        to an organization that needed it. Each engagement has something public to show.</p>
+    </div>
+
+    <!-- BDC -->
+    <article class="feature" id="bdc">
+      <div class="feature-media">
+        <a href="https://www.youtube.com/watch?v=iEjx887nnGY" target="_blank" rel="noopener" class="media-link">
+          <img src="assets/bdc-video-thumb.jpg" alt="Video thumbnail: Building a Chatbot to Support Clean Energy for Buildings, UChicago DSI and Building Decarbonization Coalition">
+          <span class="play" aria-hidden="true">&#9654;</span>
+          <span class="media-cap">Watch: building the clean-energy chatbot</span>
+        </a>
+      </div>
+      <div class="feature-body">
+        <p class="feature-kicker">Autumn 2024 &nbsp;/&nbsp; UChicago Data Science Clinic</p>
+        <h3>An LLM chatbot for geothermal energy policy</h3>
+        <p>
+          Evaluating whether Thermal Energy Network pilot projects succeed meant reading across
+          scattered PDFs in a New York state government database. I built an AI agent pipeline
+          that made that corpus conversational: a web scraper pulling filings from the NY
+          Department of Public Service, NVIDIA RAG embeddings for retrieval, ChromaDB for
+          indexed vector storage, and a Llama Instruct model behind a LangChain CLI, answering
+          stakeholder questions with precise document references.
+        </p>
+        <div class="tags">
+          <span>LangChain</span><span>ChromaDB</span><span>NVIDIA RAG</span><span>Llama Instruct</span>
+        </div>
+        <div class="links">
+          <a href="https://github.com/jmakk123/Jared-s-Projects/tree/main/2024-autumn-building-decarbon" target="_blank" rel="noopener">Source code</a>
+          <a href="https://www.youtube.com/watch?v=iEjx887nnGY" target="_blank" rel="noopener">Demo video</a>
+          <a href="https://clinic.ds.uchicago.edu/projects/one-pagers/2025-winter/Building%20Decarbonization%20Coalition.pdf" target="_blank" rel="noopener">Project brief (PDF)</a>
+        </div>
+        <figure class="inline-fig">
+          <img src="assets/bdc-arch-pipeline.png" alt="Diagram of the retrieval-augmented generation pipeline: query augmentation, vector database retriever, reciprocal rank fusion with reranking, and response generation">
+          <figcaption>The retrieval pipeline: query augmentation, vector retrieval, reciprocal rank fusion, reranking, response generation.</figcaption>
+        </figure>
+      </div>
+    </article>
+
+    <!-- PAN -->
+    <article class="feature reverse" id="pan">
+      <div class="feature-media">
+        <a href="https://pesticideinfo.org/pesticide-maps/ca-pesticide-map" target="_blank" rel="noopener" class="media-link plain">
+          <img src="assets/pan-fig-map.png" alt="Map of California showing all public schools, schools within high pesticide risk areas, and high pesticide risk regions concentrated in the Central Valley">
+          <span class="media-cap">14.9% of CA schools sit within a mile of heavy pesticide use. Explore the public map.</span>
+        </a>
+      </div>
+      <div class="feature-body">
+        <p class="feature-kicker">Spring 2025 &nbsp;/&nbsp; UChicago Data Science Clinic</p>
+        <h3>Who actually breathes California's pesticides</h3>
+        <p>
+          California accounts for roughly 20% of national pesticide use, much of it classified
+          high-risk, but the public data is granular and unwieldy. Our team analyzed the
+          California Pesticide Use Report alongside US Census Bureau demographics and the
+          California State Geoportal to find who bears the exposure. Counties with the heaviest
+          high-risk pesticide use skewed toward Hispanic populations, residents without high
+          school degrees, and agricultural workers. School districts in the Central Valley saw
+          the most intense exposure, and <strong>14.9% of California public schools sit within a
+          mile of intense pesticide application areas</strong>. Use declined steadily from 2017
+          to 2022, but the exposure disparities did not.
+        </p>
+        <div class="tags">
+          <span>Python</span><span>Geospatial Analysis</span><span>Census Data</span><span>ETL</span>
+        </div>
+        <div class="links">
+          <a href="https://github.com/jmakk123/Jared-s-Projects/tree/main/2025-spring-pesticide-action-network" target="_blank" rel="noopener">Source code</a>
+          <a href="https://pesticideinfo.org/pesticide-maps/ca-pesticide-map" target="_blank" rel="noopener">Live tool</a>
+          <a href="https://clinic.ds.uchicago.edu/projects/one-pagers/2025-spring/Pesticide%20Action%20Network.pdf" target="_blank" rel="noopener">Project brief (PDF)</a>
+          <a href="https://datascience.uchicago.edu/news/new-data-tool-tracks-pesticides-impact-on-public-health-and-the-environment/" target="_blank" rel="noopener">UChicago DSI coverage</a>
+        </div>
+        <figure class="inline-fig">
+          <img src="assets/pan-fig-correlation.png" alt="Bar chart of correlations between groundwater contaminant pesticide intensity and county demographics: no high school degree 0.67, Hispanic 0.65, working in agriculture 0.41, non-Hispanic white negative 0.58">
+          <figcaption>County-level correlation between groundwater contaminant pesticide intensity and demographics.</figcaption>
+        </figure>
+      </div>
+    </article>
+
+    <!-- EPIC -->
+    <article class="feature compact" id="epic">
+      <div class="feature-body full">
+        <p class="feature-kicker">April 2024 &nbsp;/&nbsp; UChicago Energy Policy Institute</p>
+        <h3>Decarbonizing a global logistics firm</h3>
+        <p>
+          As part of Team Solar Express, I helped build a quantitative decarbonization strategy
+          for Kuehne and Nagel: hydrotreated vegetable oil and battery-electric trucks for road
+          transport, rooftop solar across warehouses to cover Scope 2 emissions, blue and green
+          methanol for maritime, and a ramp on sustainable aviation fuel. Total cost came to
+          $4.96&nbsp;billion over 16 years, financed by a 15.1% green premium against a
+          projected $16.87&nbsp;billion in free cash flow. We won the
+          <strong>Honorable Mention Quantitative Prize</strong>.
+        </p>
+        <div class="tags"><span>ML Forecasting</span><span>Financial Modeling</span><span>Climate Strategy</span></div>
+        <div class="links">
+          <a href="https://epic.uchicago.edu/news/2024-climate-case-competition-honorable-mention-quantitative-prize-team-solar-express/" target="_blank" rel="noopener">Competition write-up</a>
+        </div>
+      </div>
+    </article>
+
   </div>
 </section>
 
