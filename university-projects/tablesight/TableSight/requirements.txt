@@ -1,0 +1,37 @@
+# Core
+streamlit
+pandas
+Pillow
+pyyaml
+tqdm
+PyMuPDF                         # PDF → image conversion in the uploader
+
+# Florence-2 (LoRA pipeline)
+transformers==4.49.0            # later versions break Florence-2-base attention
+torch
+peft
+accelerate
+einops
+timm                            # Florence-2-base loader requires this
+safetensors
+tokenizers
+
+# UniTable (3-pass encoder-decoder, poloclub source)
+torchvision                     # cell-crop transforms in the content pass
+jsonlines                       # imported transitively by src.utils.misc
+
+# SPARTAN (OCR-first heuristic)
+easyocr                         # CRAFT detector + CRNN recogniser
+opencv-python                   # adaptive thresholding + CLAHE
+numpy
+scikit-learn
+scipy
+
+# Evaluation + viz
+apted                           # TEDS edit distance
+lxml                            # HTML tree parsing
+beautifulsoup4                  # HTML→DataFrame parser
+plotly                          # dashboard charts
+
+# HuggingFace dataset bootstrap (used only by the SPARTAN training script)
+datasets

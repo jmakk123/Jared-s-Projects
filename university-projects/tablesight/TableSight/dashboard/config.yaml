@@ -1,0 +1,45 @@
+# TableSight dashboard configuration
+# Local-Mac paths. In Colab, swap to /content/drive/... — see comments.
+
+device: auto                    # auto | cuda | mps | cpu
+
+paths:
+  # Sample image gallery — 1300 FinTabNet PNGs already on disk
+  image_root: "data/processed_local/images"
+  splits_csv: "data/processed_local/training_fintabnet_pool_splits_local.csv"
+
+  # Florence-2 benchmark scoreboard (1,300-sample evaluation)
+  benchmark_csv: "TableSight/data/florence2_benchmark_1300.csv"
+
+  # Drive root (kept for Colab compatibility — not used locally)
+  drive_root: "/content/drive/MyDrive/Computer_Vision_Team8"
+  # data_csv:   "/content/drive/MyDrive/Computer_Vision_Team8/data/training_fintabnet_pool_splits_1300sample.csv"
+
+checkpoints:
+  # Florence-2 LoRA adapter directory (PeftModel folder).
+  # On Colab: /content/drive/MyDrive/Computer_Vision_Team8/outputs/sprint2_1300sample/checkpoints/phase1_general
+  florence:    "/Users/jaredmaksoud/Downloads/florence2_phase1_general"
+
+  # UniTable handoff bundle.  Pass the *directory* — loader
+  # loads structure / bbox / fine-tuned content from it.
+  unitable:    "/Users/jaredmaksoud/Downloads/unitable_bundle"
+
+  # Tuned SPARTAN params directory.
+  spartan: "TableSight/models/spartan"
+
+florence_kwargs:
+  base_model: "microsoft/Florence-2-base"
+  do_ocr_injection: true
+  max_new_tokens: 1024
+  num_beams: 3
+
+unitable_kwargs:
+  # The Ryan handoff loader infers everything from the checkpoint state dict;
+  # these kwargs are only used if the runner needs to fall back to defaults.
+  use_cpu: true                  # force CPU on Mac (no CUDA, MPS dicey for these)
+  max_struct_tokens: 784
+  max_bbox_tokens: 1024
+  max_content_tokens: 200
+
+spartan_kwargs:
+  do_colspan_merge: true

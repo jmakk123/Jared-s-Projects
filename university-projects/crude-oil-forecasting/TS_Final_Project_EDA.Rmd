@@ -1,0 +1,362 @@
+---
+title: "TS Final Project - Forecasting and Volatility Modeling of Crude Oil Prices: Exploratory Data Analysis"
+author: "Daniel Mendoza, Jared Maksoud, Nicholas Dhaliwal"
+date: "March 9th, 2026"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    theme: flatly
+---
+
+**Course:** Time Series Analysis  
+**Instructor:** Prof. Arnab Bose 
+
+```{r setup, include=FALSE}
+# Global chunk options
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  fig.width = 8,
+  fig.height = 5,
+  fig.retina = 2
+)
+```
+
+# Load Libraries
+```{r}
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(forecast)
+library(tseries)
+library(urca)
+library(rugarch)
+library(vars)
+library(tsibble)
+library(feasts)
+library(fable)
+```
+
+# Load Crude Oil Data
+```{r}
+x <- read_excel('PET_PRI_SPT_S1_D.xls', sheet = "Data 1", col_names = FALSE)
+
+i <- which(x[[1]] == "Date")[1]                       
+dat <- x[(i+1):nrow(x), 1:3]
+names(dat) <- c("Date", "USCrudePrice", "EuroCrudePrice")
+
+dnum <- suppressWarnings(as.numeric(dat$Date))
+dat$Date <- ifelse(!is.na(dnum) & dnum > 20000,      
+                   as.character(as.Date(dnum, origin = "1899-12-30")),
+                   as.character(dat$Date))
+dat$Date <- as.Date(dat$Date, format = "%Y-%m-%d")
+bad <- is.na(dat$Date)
+dat$Date[bad] <- as.Date(as.character(dat$Date[bad]), format = "%b %d, %Y")
+
+oil <- dat |>
+  mutate(
+    USCrudePrice  = suppressWarnings(as.numeric(USCrudePrice)),
+    EuroCrudePrice = suppressWarnings(as.numeric(EuroCrudePrice))
+  ) |>
+  filter(!is.na(Date)) |>
+  arrange(Date)
+
+range(oil$Date)
+oil
+```
+
+# Exploratory Data Analysis
+
+To better understand the behavior of crude oil prices and prepare the data for modeling, we conducted an exploratory data analysis of both the West Texas Intermediate (WTI) and Brent crude oil price series. This section examines the distributional characteristics, temporal dynamics, stationarity properties, and volatility patterns of the series.
+
+## Plot WTI and Brent price series
+```{r}
+ggplot(oil, aes(x = Date)) +
+  geom_line(aes(y = USCrudePrice, color = "WTI")) +
+  geom_line(aes(y = EuroCrudePrice, color = "Brent")) +
+  labs(
+    title = "Crude Oil Prices: WTI vs Brent",
+    x = "Date",
+    y = "Price (USD per Barrel)",
+    color = "Series"
+  ) +
+  theme_minimal()
+```
+
+## Histogram of WTI prices
+```{r}
+ggplot(oil, aes(x = USCrudePrice)) +
+  geom_histogram(bins = 50, fill = "steelblue", color = "white") +
+  labs(
+    title = "Distribution of US Crude Oil Prices",
+    x = "Price",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+```
+
+
+## Histogram of Brent prices
+```{r}
+ggplot(oil, aes(x = EuroCrudePrice)) +
+  geom_histogram(bins = 50, fill = "steelblue", color = "white") +
+  labs(
+    title = "Distribution of Euro Crude Oil Prices",
+    x = "Price",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+```
+
+## Log Transformations
+```{r}
+oil <- oil |>
+  mutate(
+    logWTI = log(USCrudePrice),
+    logBrent = log(EuroCrudePrice)
+  )
+```
+
+```{r}
+ggplot(oil, aes(Date, logWTI)) +
+  geom_line(color = "darkred") +
+  labs(
+    title = "Log US Crude Oil Price",
+    x = "Date",
+    y = "Log Price"
+  ) +
+  theme_minimal()
+```
+
+
+```{r}
+ggplot(oil, aes(Date, logBrent)) +
+  geom_line(color = "darkred") +
+  labs(
+    title = "Log Euro Crude Oil Price",
+    x = "Date",
+    y = "Log Price"
+  ) +
+  theme_minimal()
+```
+
+## Log Returns
+```{r}
+oil <- oil |>
+  arrange(Date) |>
+  mutate(
+    WTI_Return = c(NA, diff(logWTI)),
+    Brent_Return = c(NA, diff(logBrent))
+  )
+```
+
+```{r}
+ggplot(oil, aes(Date, WTI_Return)) +
+  geom_line(color = "darkblue") +
+  labs(
+    title = "US Crude Oil Log Returns",
+    x = "Date",
+    y = "Log Return"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+ggplot(oil, aes(Date, Brent_Return)) +
+  geom_line(color = "darkblue") +
+  labs(
+    title = "Euro Crude Oil Log Returns",
+    x = "Date",
+    y = "Log Return"
+  ) +
+  theme_minimal()
+```
+
+## Volatility Clustering
+```{r}
+ggplot(oil, aes(Date, abs(WTI_Return))) +
+  geom_line(color = "purple") +
+  labs(
+    title = "US Crude Oil Absolute Returns (Volatility Clustering)",
+    x = "Date",
+    y = "|Return|"
+  ) +
+  theme_minimal()
+```
+```{r}
+ggplot(oil, aes(Date, abs(Brent_Return))) +
+  geom_line(color = "purple") +
+  labs(
+    title = "Euro Crude Oil Absolute Returns (Volatility Clustering)",
+    x = "Date",
+    y = "|Return|"
+  ) +
+  theme_minimal()
+```
+
+## ACF and PACF
+```{r}
+acf(na.omit(oil$WTI_Return), main = "ACF of US Crude Oil Returns")
+```
+```{r}
+pacf(na.omit(oil$WTI_Return), main = "PACF of US Crude Oil Returns")
+```
+
+```{r}
+acf(na.omit(oil$Brent_Return), main = "ACF of Euro Crude Oil Returns")
+```
+```{r}
+pacf(na.omit(oil$Brent_Return), main = "PACF of Euro Crude Oil Returns")
+```
+
+## Stationarity Tests
+
+### ADF Tests
+
+US Crude Oil Prices
+```{r}
+adf.test(na.omit(oil$USCrudePrice))
+```
+
+US Crude Oil Returns
+```{r}
+adf.test(na.omit(oil$WTI_Return))
+```
+
+Euro Crude Oil Prices
+```{r}
+adf.test(na.omit(oil$EuroCrudePrice))
+```
+
+Euro Crude Oil Returns
+```{r}
+adf.test(na.omit(oil$Brent_Return))
+```
+
+### KPSS Tests
+
+US Crude Oil Prices
+```{r}
+kpss.test(na.omit(oil$USCrudePrice))
+```
+
+US Crude Oil Returns
+```{r}
+kpss.test(na.omit(oil$WTI_Return))
+```
+
+Euro Crude Oil Prices
+```{r}
+kpss.test(na.omit(oil$EuroCrudePrice))
+```
+
+Euro Crude Oil Returns
+```{r}
+kpss.test(na.omit(oil$Brent_Return))
+```
+## Correlation Analysis
+
+Correlation Between Prices
+```{r}
+cor(oil$USCrudePrice, oil$EuroCrudePrice, use = "complete.obs")
+```
+
+```{r}
+ggplot(oil, aes(USCrudePrice, EuroCrudePrice)) +
+  geom_point(alpha = 0.3) +
+  labs(
+    title = "Relationship Between WTI and Brent Prices",
+    x = "WTI Price",
+    y = "Brent Price"
+  ) +
+  theme_minimal()
+```
+
+## Cointegration Test
+```{r}
+coint_test <- ca.po(cbind(oil$USCrudePrice, oil$EuroCrudePrice), demean = "constant")
+
+summary(coint_test)
+```
+
+```{r}
+oil <- oil |>
+  mutate(spread = USCrudePrice - EuroCrudePrice)
+
+ggplot(oil, aes(Date, spread)) +
+  geom_line(color = "darkgreen") +
+  labs(
+    title = "WTI–Brent Price Spread",
+    x = "Date",
+    y = "Price Difference"
+  ) +
+  theme_minimal()
+```
+
+# Summary
+
+## Price Series Behavior
+
+The time series plots of WTI and Brent crude oil prices show strong co-movement between the two benchmarks across the entire sample period. Both series exhibit clear long-run trends and major price shocks, including large fluctuations during the 2008 financial crisis and the 2020 COVID-19 oil demand collapse. These events create pronounced spikes and drops in the series.
+
+Overall, the two price series follow very similar trajectories, reflecting the strong economic linkage between the global oil benchmarks. The presence of persistent trends and structural movements suggests that the price series are likely non-stationary in levels, which is typical for financial and commodity price data.
+
+## Distribution of Oil Prices
+
+Histograms of both WTI and Brent crude oil prices reveal right-skewed distributions with a wide range of values. Most observations fall within moderate price ranges, while relatively fewer observations occur at very high price levels.
+
+The skewness and wide spread in the price distributions reflect periods of extreme market conditions and structural changes in global energy markets. These distributional characteristics further motivate the use of log transformations, which help stabilize variance and make the series more suitable for time series modeling.
+
+## Log Transformations
+
+To address heteroskedasticity and stabilize the variance of the price series, we applied logarithmic transformations to both WTI and Brent prices. The log-transformed series maintain the same overall temporal patterns but reduce the impact of large-scale price changes and improve interpretability in percentage terms.
+
+Log transformations are standard in financial time series analysis because they allow changes in prices to be interpreted as continuously compounded returns and make the series more suitable for econometric modeling.
+
+## Log Returns
+
+To analyze price dynamics, we computed log returns, defined as the first difference of the log price series. Log returns represent the percentage change in prices from one period to the next.
+
+The return series exhibit several important characteristics:
+	•	Returns fluctuate around a stable mean close to zero
+	•	Large spikes occur during periods of market stress
+	•	There are clusters of large movements followed by periods of relative calm
+
+These patterns suggest that while returns appear mean-stationary, their variance changes over time, indicating potential conditional heteroskedasticity.
+
+## Volatility Clustering
+
+Plots of the absolute returns highlight clear evidence of volatility clustering, a common feature of financial time series. Periods of high volatility tend to cluster together, followed by extended periods of relatively low volatility.
+
+This phenomenon indicates that the variance of the return series is not constant over time. Instead, shocks to volatility persist for multiple periods. Such behavior motivates the use of GARCH-type models, which explicitly model time-varying conditional variance.
+
+## Autocorrelation Structure
+
+The autocorrelation function (ACF) and partial autocorrelation function (PACF) of the return series show that most autocorrelations lie close to zero and fall within the statistical confidence bounds. This indicates that the return series exhibit little serial correlation in the mean process.
+
+This pattern is consistent with financial market efficiency, where returns are largely unpredictable from past values. However, even though the mean process shows weak autocorrelation, volatility persistence may still exist, which again supports the use of GARCH models to capture volatility dynamics.
+
+## Stationarity Tests
+
+To formally evaluate stationarity, we conducted both Augmented Dickey-Fuller (ADF) and KPSS tests on the crude oil price series and their corresponding log returns. The ADF test results indicate that the WTI and Brent price levels are non-stationary, with p-values of approximately 0.086 and 0.154 respectively, meaning we fail to reject the null hypothesis of a unit root. In contrast, the ADF tests for both WTI and Brent log returns strongly reject the unit root hypothesis, with p-values below 0.01, indicating that the return series are stationary. The KPSS tests provide complementary evidence. For both WTI and Brent price levels, the KPSS test rejects the null hypothesis of stationarity (p-value ≈ 0.01), further confirming that the price series are non-stationary. However, the KPSS tests for the return series fail to reject stationarity (p-value ≈ 0.10), indicating that the log return processes are stationary. Taken together, these results consistently show that crude oil prices follow a non-stationary integrated process, while their log returns are stationary, which supports modeling returns rather than price levels when applying ARIMA-type models.
+
+## Correlation Analysis
+
+Crude oil prices for WTI and Brent exhibit an extremely strong positive correlation. The calculated correlation coefficient between the two series is very close to one, indicating that movements in the two benchmarks are highly synchronized. The scatter plot further confirms this relationship, showing a tight linear pattern where increases in WTI prices correspond closely with increases in Brent prices. This strong co-movement is expected since both benchmarks reflect global oil market conditions and respond to similar supply and demand shocks. The high correlation suggests that the two price series may share a common long-run equilibrium relationship, which motivates the use of cointegration analysis in the subsequent section.
+
+## Cointegration Test
+
+Cointegration analysis was conducted to determine whether WTI and Brent crude oil prices share a long-run equilibrium relationship. Since both price series were found to be non-stationary in levels but highly correlated, the Phillips–Ouliaris cointegration test was applied. The test statistic was substantially larger than the critical values at all conventional significance levels, providing strong evidence of cointegration between the two series. This result indicates that although WTI and Brent prices may diverge in the short run due to regional supply conditions or market frictions, they move together in the long run and maintain a stable equilibrium relationship. This finding is consistent with economic intuition, as both benchmarks reflect global crude oil market fundamentals.
+
+The WTI–Brent spread plot shows that while the two benchmarks generally move closely together, short-term deviations occasionally emerge due to regional supply conditions, transportation constraints, and market shocks. Despite these temporary divergences, the spread tends to revert toward a relatively stable range over time, providing visual evidence consistent with the cointegration relationship identified between the two price series.
+
+
+
+
+
+
+

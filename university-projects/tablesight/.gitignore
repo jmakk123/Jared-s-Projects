@@ -1,0 +1,53 @@
+# ── Data & raw model checkpoints ────────────────────────────────────────────
+data/raw/*
+data/processed/*
+data/processed_local/
+data/synthetic/*
+verification/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/synthetic/.gitkeep
+
+# Top-level legacy /models directory (NOT TableSight/models — see negation below)
+/models/
+*.jsonl
+*.pth
+*.pt
+*.bin
+*.safetensors
+
+# Keep TableSight/models/ (small JSON params + Python runners; the heavy
+# checkpoints inside it are still excluded via the *.pt / *.safetensors patterns
+# above).
+!TableSight/models/
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── OS / editor caches ───────────────────────────────────────────────────────
+.DS_Store
+.vscode/
+.idea/
+.history/
+*.swp
+*.swo
+*.bak
+
+# ── Notebook checkpoints (we use .py scripts now) ────────────────────────────
+.ipynb_checkpoints/

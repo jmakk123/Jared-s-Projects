@@ -1,0 +1,7 @@
+{
+  "global": {
+    "target_width": 1600,
+    "clahe": false,
+    "deskew": false
+  }
+}
