@@ -148,7 +148,7 @@ img { max-width: 100%; display: block; }
   font-family: var(--mono); font-size: 11px; letter-spacing: .24em; text-transform: uppercase;
   color: var(--maroon); margin: 0 0 26px; font-weight: 600;
 }
-.now-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+.now-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
 .now { display: flex; flex-direction: column; gap: 5px; padding-left: 18px; border-left: 3px solid var(--maroon); }
 .now-role { font-family: var(--serif); font-size: 1.3rem; color: var(--ink); line-height: 1.2; }
 .now-org { font-size: 14px; color: var(--maroon); letter-spacing: .02em; font-weight: 600; }
